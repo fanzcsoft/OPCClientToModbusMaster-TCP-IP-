@@ -1,0 +1,226 @@
+= 13.06.2015 - V1.5.11.5 =
+* New       Implemented implicit cast operator for ExpandedNodeId's.
+* New       Implemented additional Get method overload on OpcNamespace to retrieve node namespaces
+            using an Uri and Index.
+* Fixed     Fixed issue with ExpandedNodeId's in OpcValue's and simplified handling of them.
+
+= 30.05.2016 - V1.5.11.4 =
+* New       Minimized lock conditions when reading/writing nodes.
+
+= 02.05.2016 - V1.5.11.3 =
+* New       Renewed demo license to provide new license period.
+
+= 18.04.2016 - V1.5.11.2 =
+* Fixed     Issue with monitored items when reading the initial value of a node (the server ran
+            into a NullReferenceException in case of non filtered monitored items).
+
+= 31.03.2016 - V1.5.11.1 =
+* New       Implemented Changed event on OpcStatus.
+* Fixed     Issue with not synchronized OPC Status from SDK to the foundation stack
+            (on OpcValue and OpcVariableNode).
+
+= 23.03.2016 - V1.5.11.0 =
+* New       OpcNamespace which represent the whole namespace information of an node identifier
+            (Namespace Index and Namespace Uri).
+* New       IOpcNamespaceResolver which is implemented by OpcNodeManager, OpcClient and OpcServer.
+            This interface does provide late bound namespace resolution after the OpcServer is
+            started or the OpcClient is connected. Each OpcNodeId its namespace has been resolved
+            does provide the fully qualified url the namespace together with the node identifier.
+* New       OpcNodeId.Namespace property to provide the associated OpcNamespace.
+* Changed   Renamed OpcAttribute.Historizing to OpcAttribute.IsHistorizing.
+* New       OpcNode: Implemented node change tracking through the properties HasPendingChanges
+            and PendingChanges including the method IsChangePending.
+* New       Implemented history support for OpcVariableNode and its subclasses.
+* New       Enhanced ctor overloads of OpcStatusCollection to much simpler setup a new instance
+            using OpcStatusCodes.
+* New       HDA methods on client to read and update node history.
+* New       HDA interface on server to provide the required logic to handle historical data access.
+* New       HDA services: IOpcReadNodesHistoryService and IOpcUpdateNodesHistoryService.
+* New       HDA commands: OpcCreateNodeHistory, OpcDeleteNodeHistory, OpcDeleteNodeHistoryAtTime,
+            OpcDeleteNodeHistoryModified, OpcReadNodeHistory, OpcReplaceNodeHistory and
+            OpcUpdateNodeHistory. All of them are subclasses of the OpcNodeHistoryCommand.
+
+= 03.02.2016 - V1.5.10.0 =
+* Added     OPC Watch application to assembly archive.
+
+= 25.01.2016 - V1.5.9.1 =
+* Fixed     Issue with wrong released session although it can be reused in case of an reconnect.
+
+= 21.01.2016 - V1.5.9.0 =
+* Fixed     Possible multi threading issues in session keep alive in OpcClient.
+* Changed   The BreakDetected event is now being raised only if the reconnect timeout is
+            equals zero.
+* Fixed     In case of releasing an OPC client session which has already been disposed of in
+            some cases it could lead to an undesired reconnect to the server upon a thrown
+            ObjectDisposedException by the already disposed client session.
+
+= 18.01.2016 - V1.5.8.0 =
+* New       Updated licensing logic.
+
+= 14.01.2016 - V1.5.7.1 =
+* Fixed     Issue with the minimum possible PublishingInterval in the OpcSubscription class.
+
+= 09.01.2016 - V1.5.7.0 =
+* Fixed     Issue with null reference exception in OpcCertificateManager.CreateCertificate
+            when passing an applicationUri as a null reference (Nothing in Visual Basic).
+* Fixed     Issue with non uniquely generated OpcNodeId's for InputArguments and OutputArguments
+            of OpcMethodNode instances. This lead to the behaviour that only the arguments of the
+            most recently provided OpcMethodNode was published when browsing / reading the
+            method argument properties.
+* Changed   The OpcNodeId for InputArgument and OutputArgument nodes of OpcMethodNode instances
+            for more information see the topic before.
+* Changed   The OpcReadOnlyNodeCollection class does now provide IOpcNode instances instead of
+            the internal foundation NodeState instances.
+* New       An OpcNodeId can now constructed from OpcName instances its SymbolicName is a null
+            reference (Nothing in Visual Basic). In this case the BrowseName is used instead of
+            the SymbolicName.
+* New       The OpcReadNodesRequest does now by default return both timestamps (source and server).
+* New       Implemented new OpcNodeManager methods: AddNode, RemoveNode and IsNodeAccessable.
+* Fixed     Issue with sometimes duplicate ACE's in case of requesting an ACE which has been already
+            added to an ACL.
+
+= 17.12.2015 - V1.5.6.8 =
+* Fixed     Issue with missed TimeStamp update on writing node values.
+* Fixed     Issue with missed TimeStamp data on reading node values.
+
+= 17.12.2015 - V1.5.6.7 =
+* New       Implemented ChangePassword method on OpcServerIdentity to change the user password
+            after an identity has been created.
+* New       Implemented protected SystemContext property on OpcNodeManager to provide an
+            alternative context within system internal changes can be performed.
+* New       The OpcWriteNode class does now automatically set the source label timestamp when
+            writing a node.
+* Changed   The OpcValueLabel is now not longer defined as a struct instead it is now a class.
+
+= 16.12.2015 - V1.5.6.6 =
+* New       Implemented AddNode and RemoveNode in OpcNodeManager to support dynamically provide
+            nodes after CreateNodes has been called.
+
+= 10.12.2015 - V1.5.6.5 =
+* New       Added additional session information to OpcOperationContext calling
+            IsNodeAccessable on OpcNodeManager.
+
+= 09.12.2015 - V1.5.6.4 =
+* New       Implemented IsNodeAccessable method on OpcNodeManager to custom specify whether a node
+            is accessable within the view.
+
+= 08.12.2015 - V1.5.6.3 =
+* Fixed     Issue with duplicate ACE's when manually adding additional entries on-demand.
+
+= 12.10.2015 - V1.5.6.2 =
+* Fixed     Issue with reading and writing OpcValue instances and arrays as node values on
+            client and server sides.
+* Fixed     Issue with anonymous user login on server side when creating OpcSession object.
+* New       Implemented redirection in case there the string value passed to the ctor(string, int)
+            of the OpcNodeId class does indicate a numeric identifier now an OpcNodeId will be
+            initialized with the numeric identifier instead of using the string value.
+
+= 08.09.2015 - V1.5.6.1 =
+* Fixed     Issue with Anonymous and UserName ACL's enabled at same time.
+* New       Implemented additional CreateCertificate overloads in OpcCertificateManager.
+
+= 07.09.2015 - V1.5.6.0 =
+* Changed   Renamed BuiltInType property to DataType on OpcAttributeInfo.
+* New       Browsing the DataType attribute does now result into a member of the OpcDataType
+            enumeration value.
+* New       Implemented OpcValue as surrogate of the DataValue class.
+* New       Implemented static CreateCertificate method on OpcCertificateManager to create
+            certificates out of the box.
+* New       OpcStatus class does not provide as Code the new OpcStatusCode enumeration.
+* New       Implemented support for OpcDataTypes: ExtensionObject, Value and Variant.
+* Changed   Renamed DataValue to Value in OpcDataTypes.
+* New       Implemented support to directly start browsing using a method node.
+* Changed   Moved OpcDiscoveryClient to Opc.UaFx.Client namespace.
+* Fixed     Issue with NullReferenceException if non cached nodes are browsed.
+* New       Implemented support using a null reference for an application URI to create
+            certificates.
+* New       Implemented new abstraction layer for different OPC server types (OpcServerBase).
+* New       Implemented new OPC server specialization: OPC Discovery Server.
+* Fixed     Issue in OPC Client with accessing the internal session instance although it has been
+            disposed off.
+
+= 25.08.2015 - V1.5.5.3 =
+* New       Simplified use of OpcVariableClass in Read/Write callbacks through determining the
+            status and timestamp (if no other has been specified) from the node instance.
+
+= 24.08.2015 - V1.5.5.2 =
+* Fixed     Issue with Anonymous and UserName ACL's enabled at same time.
+* New       Removed OpcAccessControlMode member 'Default' and replaced its use with Blacklist.
+
+= 24.08.2015 - V1.5.5.1 =
+* Fixed     Issue with Null DataType in VariableNodes.
+
+= 24.08.2015 - V1.5.5.0 =
+* New       Implemented different callback properties to read/write OpcNode attributes.
+* New       Implemented protected virtual methods to read/write OpcNode attributes.
+* New       Implemented specific callback properteis to read/write OpcVariableNode attributes.
+* New       Implemented protected virutal methods to read/write OpcVariableNode value attribute.
+* New       The OpcSession class does now provide the properties UsedIdentity and SuppliedIdentity.
+* New       Implemented Update method on OpcStatus.
+* New       The OpcContext does now provide an Identity property.
+* New       Implemented new OpcMonitoredItem class in Server namespace.
+* New       OnMonitoredItemCreated/Deleted/Modified does now provide non-foundation classes.
+* Changed   Moved Identity and ImpersonationContext classes from Opc.UaFx.Server to
+            Opc.UaFx namespace.
+
+= 18.06.2015 - V1.5.2.0 =
+* New       Excluded auto update of endpoint before connect in cases there a preferred endpoint is
+            defined in OpcClient.
+* New       Implemented new endpoint identity security on OpcSecurity to enable/disable different
+            endpoints for one or more ACEs. Additionally renamed some existing methods.
+* New       Implemented StateChanged events in OpcClient.
+
+= 16.06.2015 - V1.5.1.1 =
+* New       Implemented InvokeService method in OpcClient to invoke service routines using a
+            try-catch-finally block to ensure that the clients state property does also handle its
+            connection state in case of an exception which indicates that the connection has been
+            timeout, lost, etc.
+* Fixed     Fixed issue with null references as DisplayName and BrowseName in
+            OpcReferenceDescription.
+
+= 15.06.2015 - V1.5.1.0 =
+* New       Implemented SaveCertificate method on OpcCertificateManager.
+* New       Reworked complete argument binding to support out and ref parameters too in
+            OpcMethodNode.
+* New       Implemented ByRef Type support in OpcMethodNode.
+* New       Implemented local server CertificateValidationFailed event to support custom failed
+            certificate validation actions.
+* New       Implemented new OpcNodeInfo derivate OpcMethodNodeInfo to browse the method nodes
+            arguments.
+* New       Implemented new OpcCertificateValidationFailedEventArgs and
+            OpcCertificateValidationFailedEventHandler.
+* New       Implemented DataType property on OpcDataVariableNode.
+* New       Implemented InputArguments and OutputArguments properties on OpcMethodNode class.
+            Additionally extended support of OpcArgument instances with OpcArgumentAttribute on
+            custom delegates.
+* New       Implemented support for null references in all implicit cast operators which working
+            with reference types.
+
+= 10.06.2015 - V1.5.0.0 =
+* New       Implemented logic to generate server fulfilled configuration on start.
+* New       Completely reworked endpoint selection using the OpcDiscoveryClient and custom preferred
+            OpcSecurityPolicy.
+* New       Improved auto complete of configuration depending on its application type.
+* New       Introduced transport profile information.
+* New       Moved configuration of UserTokenPolicies to OpcServer on startup and improved
+            transparency of IsEnabled property.
+* Fixed     Issue with empty certificate store paths.
+* New       Completely reworked node referencing mechanism to provide more information while
+            building the node references and to also remove OPC internals from the user API.
+* New       Completely reworked existing node implementations and moved their base class reference
+            to an internal reference to improve the experience with the framework and become more
+            CLSCompliant by also providing more useful APIs.
+* New       Implemented support for discovery server base address configuration.
+* New       Improved configuration defaults also when loading configuration through one of the
+            Load methods. Additionally implemented default support for
+            DiscoveryServerConfigurations.
+* New       More simplified the API.
+* New       Introduced replacement for StatusCode -> OpcStatus.
+* New       Reworked OpcDiscoveryClient from factory methods to constructor use to provide a
+            fluently interface between all server and client classes.
+
+= 09.06.2015 - V1.4.0.0 =
+* New       Merged Opc.ClientFx.Advanced and Opc.ServerFx.Advanced together to Opc.UaFx.Advanced.
+
+= 11.01.2015 - V1.0.0.0 =
+* New       Created Opc.ClientFx.Advanced and Opc.ServerFx.Advanced.
