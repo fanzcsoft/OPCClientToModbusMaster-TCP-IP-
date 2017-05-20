@@ -8,7 +8,7 @@ Folder OPC_To_Modbus_Server is Form
     
     try to
     
-    Drag DLL from folder PI_OPC2Modbus\WorkDLL TO C:\windows\assembly\
+    Drag DLL from folder PI_OPC2Modbus\WorkDLL TO C:\windows\assembly\ or TO your local program
 
 Folder PI_OPC2Modbus is Service
  
