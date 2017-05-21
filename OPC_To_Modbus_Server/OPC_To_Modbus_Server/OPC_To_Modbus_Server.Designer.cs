@@ -68,6 +68,8 @@
             this.panel2 = new System.Windows.Forms.Panel();
             this.timer2ReconnectOPC = new System.Windows.Forms.Timer(this.components);
             this.timerModbus = new System.Windows.Forms.Timer(this.components);
+            this.textBoxOPCTAG = new System.Windows.Forms.TextBox();
+            this.label3 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -90,8 +92,9 @@
             this.dataGridView1.Location = new System.Drawing.Point(0, 0);
             this.dataGridView1.Name = "dataGridView1";
             this.dataGridView1.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridView1.Size = new System.Drawing.Size(835, 353);
+            this.dataGridView1.Size = new System.Drawing.Size(835, 321);
             this.dataGridView1.TabIndex = 1;
+            this.dataGridView1.MouseClick += new System.Windows.Forms.MouseEventHandler(this.dataGridView1_MouseClick);
             // 
             // RegNo
             // 
@@ -294,7 +297,7 @@
             // 
             // Save
             // 
-            this.Save.Location = new System.Drawing.Point(527, 6);
+            this.Save.Location = new System.Drawing.Point(381, 103);
             this.Save.Name = "Save";
             this.Save.Size = new System.Drawing.Size(83, 25);
             this.Save.TabIndex = 11;
@@ -305,7 +308,7 @@
             // 
             // Cancel
             // 
-            this.Cancel.Location = new System.Drawing.Point(616, 6);
+            this.Cancel.Location = new System.Drawing.Point(471, 103);
             this.Cancel.Name = "Cancel";
             this.Cancel.Size = new System.Drawing.Size(83, 25);
             this.Cancel.TabIndex = 12;
@@ -334,6 +337,8 @@
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.label3);
+            this.panel1.Controls.Add(this.textBoxOPCTAG);
             this.panel1.Controls.Add(this.label2);
             this.panel1.Controls.Add(this.StopPort);
             this.panel1.Controls.Add(this.StartPort);
@@ -355,13 +360,13 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(0, 24);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(835, 108);
+            this.panel1.Size = new System.Drawing.Size(835, 140);
             this.panel1.TabIndex = 15;
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(223, 87);
+            this.label2.Location = new System.Drawing.Point(3, 87);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(331, 13);
             this.label2.TabIndex = 19;
@@ -412,9 +417,9 @@
             // 
             this.panel2.Controls.Add(this.dataGridView1);
             this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel2.Location = new System.Drawing.Point(0, 132);
+            this.panel2.Location = new System.Drawing.Point(0, 164);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(835, 353);
+            this.panel2.Size = new System.Drawing.Size(835, 321);
             this.panel2.TabIndex = 16;
             // 
             // timer2ReconnectOPC
@@ -427,6 +432,24 @@
             // 
             this.timerModbus.Enabled = true;
             this.timerModbus.Tick += new System.EventHandler(this.timerModbus_Tick);
+            // 
+            // textBoxOPCTAG
+            // 
+            this.textBoxOPCTAG.Location = new System.Drawing.Point(103, 103);
+            this.textBoxOPCTAG.Name = "textBoxOPCTAG";
+            this.textBoxOPCTAG.Size = new System.Drawing.Size(272, 20);
+            this.textBoxOPCTAG.TabIndex = 20;
+            this.textBoxOPCTAG.Visible = false;
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(36, 106);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(54, 13);
+            this.label3.TabIndex = 21;
+            this.label3.Text = "OPC TAG";
+            this.label3.Visible = false;
             // 
             // OPC_To_ModBus_Server
             // 
@@ -492,6 +515,8 @@
         private System.Windows.Forms.Label label2;
         public System.Windows.Forms.Timer timer2ReconnectOPC;
         public System.Windows.Forms.Timer timerModbus;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.TextBox textBoxOPCTAG;
     }
 }
 

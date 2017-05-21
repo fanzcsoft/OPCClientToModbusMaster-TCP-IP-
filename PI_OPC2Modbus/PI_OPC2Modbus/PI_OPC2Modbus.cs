@@ -195,6 +195,7 @@ namespace PI_OPC2Modbus
 
                 dataGridView1.Rows[row].Cells["TagType"].Value = TagType;
                 dataGridView1.Rows[row].Cells["OPC_Tag"].Value = Tag_Name;
+                dataGridView1.Rows[row].Cells["TimeStamp"].Value = "";
                 if (TagType == "F")
                 {
                     dataGridView1.Rows[row].Cells["Value"].Value = "-999";
@@ -352,7 +353,6 @@ namespace PI_OPC2Modbus
 
         public void ReadCompleteCallback(object clientHandle, Opc.Da.ItemValueResult[] results)
         {
-            int rowgridview = 0;
             for (int row = 0; row < results.Count(); row++)
             {
                 string Result_TagItem = results[row].ItemName.ToString();
@@ -360,80 +360,93 @@ namespace PI_OPC2Modbus
                 string Result_TimeStamp = results[row].Timestamp.ToLocalTime().ToString();
                 double doubleRoundValue = 0;
 
-                string timeinlog = Convert.ToDateTime(DateTime.Now.ToString()).ToString("yyyy-MM-dd HH:mm:ss= ");
 
-                string OPC_tag_indatagridview = dataGridView1.Rows[rowgridview].Cells["OPC_Tag"].Value.ToString();
-                string TagType_indatagridview = dataGridView1.Rows[rowgridview].Cells["TagType"].Value.ToString();
-                if (OPC_tag_indatagridview == Result_TagItem)
+                for (int rowgridview = 0; rowgridview < Pub_dtTTAGMapping.Rows.Count; rowgridview++)
                 {
-                    if (results[row].Value != null)
+                    string OPC_tag_indatagridview = dataGridView1.Rows[rowgridview].Cells["OPC_Tag"].Value.ToString();
+                    string TagType_indatagridview = dataGridView1.Rows[rowgridview].Cells["TagType"].Value.ToString();
+                    if (OPC_tag_indatagridview == Result_TagItem)
                     {
-                        //Correct Tag Good Quality                                                
-                        doubleRoundValue = Math.Round(Convert.ToDouble(results[row].Value), 3);
-                        dataGridView1.Rows[rowgridview].Cells["Value"].Value = doubleRoundValue.ToString();
-                        dataGridView1.Rows[rowgridview].Cells["TimeStamp"].Value = Result_TimeStamp;
-                        dataGridView1.Rows[rowgridview].Cells["OPC_Tag"].Value = Result_TagItem;
-                        dataGridView1.Rows[rowgridview].Cells["Quality"].Value = Result_Quality;
-                        //Write Log--------------------------------------------------------------------------------------------------------                        
-                        if (write_log == true)//1 mean can connect opc server then write 1 time
+                        if (results[row].Value != null)
                         {
-                            using (StreamWriter sw = File.AppendText(AppendFilepath))
-                            {
-                                sw.WriteLine(timeinlog + OPC_tag_indatagridview + " Added item " + rowgridview + " to group The operation completed successfully");
-                            }
-                        }
-                        //-----------------------------------------------------------------------------------------------------------------                                                              
-                        ++rowgridview;
-                    }//end if Correct Tag Good Quality
-                    else if (results[row].Value == null)
-                    {
-                        //Correct Tag But Bad Quality
-                        if (TagType_indatagridview == "F")
-                        {
-                            dataGridView1.Rows[rowgridview].Cells["Value"].Value = "-999";
-                        }
-                        else
-                        {
-                            dataGridView1.Rows[rowgridview].Cells["Value"].Value = "0";
-                        }
-                        dataGridView1.Rows[rowgridview].Cells["TimeStamp"].Value = Result_TimeStamp;
-                        dataGridView1.Rows[rowgridview].Cells["OPC_Tag"].Value = Result_TagItem;
-                        dataGridView1.Rows[rowgridview].Cells["Quality"].Value = Result_Quality;
+                            //Correct Tag Good Quality                                                
+                            doubleRoundValue = Math.Round(Convert.ToDouble(results[row].Value), 3);
+                            dataGridView1.Rows[rowgridview].Cells["Value"].Value = doubleRoundValue.ToString();
+                            dataGridView1.Rows[rowgridview].Cells["TimeStamp"].Value = Result_TimeStamp;
+                            dataGridView1.Rows[rowgridview].Cells["OPC_Tag"].Value = Result_TagItem;
+                            dataGridView1.Rows[rowgridview].Cells["Quality"].Value = Result_Quality;
 
-                        //Write Log--------------------------------------------------------------------------------------------------------
-                        if (write_log == true)//1 mean can connect opc server then write 1 time
+                        }//end if Correct Tag Good Quality
+                        else if (results[row].Value == null)
                         {
-                            using (StreamWriter sw = File.AppendText(AppendFilepath))
+                            //Correct Tag But Bad Quality
+                            if (TagType_indatagridview == "F")
                             {
-                                sw.WriteLine(timeinlog + OPC_tag_indatagridview + " Added item " + rowgridview + " Callback received for item but quality BAD The operation completed successfully Incorrect function");
+                                dataGridView1.Rows[rowgridview].Cells["Value"].Value = "-999";
                             }
+                            else
+                            {
+                                dataGridView1.Rows[rowgridview].Cells["Value"].Value = "0";
+                            }
+                            dataGridView1.Rows[rowgridview].Cells["TimeStamp"].Value = Result_TimeStamp;
+                            dataGridView1.Rows[rowgridview].Cells["OPC_Tag"].Value = Result_TagItem;
+                            dataGridView1.Rows[rowgridview].Cells["Quality"].Value = Result_Quality;
+
+
+                        }//end else if Correct Tag But Bad Quality
+                    }//end if Correct Tag
+
+                }
+
+                //textBox4.Invoke(new EventHandler(delegate { textBox4.Text = (results[row].Value).ToString(); }));                
+            }//end for loop 
+            if (write_log == true)//1 mean can connect opc server then write 1 time
+            {
+                for (int log = 0; log < Pub_dtTTAGMapping.Rows.Count; log++)
+                {
+                    string timeinlog = Convert.ToDateTime(DateTime.Now.ToString()).ToString("yyyy-MM-dd HH:mm:ss= ");
+                    string OPC_tag_indatagridview = dataGridView1.Rows[log].Cells["OPC_Tag"].Value.ToString();
+                    //good quality
+                    if (dataGridView1.Rows[log].Cells["Value"].Value.ToString() != "-999" && dataGridView1.Rows[log].Cells["TimeStamp"].Value.ToString() != "")
+                    {
+                        //Write Log--------------------------------------------------------------------------------------------------------                        
+
+                        using (StreamWriter sw = File.AppendText(AppendFilepath))
+                        {
+                            sw.WriteLine(timeinlog + OPC_tag_indatagridview + " Added item " + log + " to group The operation completed successfully");
+                        }
+
+                        //-----------------------------------------------------------------------------------------------------------------                                                              
+
+                    }
+                    //bad quality
+                    else if (dataGridView1.Rows[log].Cells["TimeStamp"].Value.ToString() != "")
+                    {
+                        //Write Log--------------------------------------------------------------------------------------------------------
+
+                        using (StreamWriter sw = File.AppendText(AppendFilepath))
+                        {
+                            sw.WriteLine(timeinlog + OPC_tag_indatagridview + " Added item " + log + " Callback received for item but quality BAD The operation completed successfully Incorrect function");
+                        }
+
+
+                        //-----------------------------------------------------------------------------------------------------------------
+
+                    }
+                    else if (dataGridView1.Rows[log].Cells["TimeStamp"].Value.ToString() == "")
+                    {
+                        //Write Log--------------------------------------------------------------------------------------------------------
+
+                        using (StreamWriter sw = File.AppendText(AppendFilepath))
+                        {
+                            sw.WriteLine(timeinlog + OPC_tag_indatagridview + " Unable to add item " + log + " to group The item is no longer available in the server address space.");
                         }
 
                         //-----------------------------------------------------------------------------------------------------------------
-                        ++rowgridview;
-                    }//end else if Correct Tag But Bad Quality
-                }//end if Correct Tag
-                //Invalid Tag
-                else if (OPC_tag_indatagridview != Result_TagItem)
-                {
-                    //Console.WriteLine("In ReadComplete Callback ");
-                    dataGridView1.Rows[rowgridview].Cells["TimeStamp"].Value = "";
-                    dataGridView1.Rows[rowgridview].Cells["Quality"].Value = "";
-                    dataGridView1.Rows[rowgridview].Cells["Value"].Value = "-999";
-                    //Write Log--------------------------------------------------------------------------------------------------------
-                    if (write_log == true)//1 mean can connect opc server then write 1 time 
-                    {
-                        using (StreamWriter sw = File.AppendText(AppendFilepath))
-                        {
-                            sw.WriteLine(timeinlog + OPC_tag_indatagridview + " Unable to add item " + rowgridview + " to group The item is no longer available in the server address space.");
-                        }
-                    }
-                    //-----------------------------------------------------------------------------------------------------------------
 
-                    ++rowgridview;
-                    --row;
-                }//end else if InvalidTag
-            }//end for loop 
+                    }//end else if InvalidTag
+                }
+            }
             write_log = false; // ++ mean don't write agian
 
         }
@@ -634,26 +647,6 @@ namespace PI_OPC2Modbus
             //File.Create(AppDomain.CurrentDomain.BaseDirectory + "Onstop.txt");
         }
 
-        //private void timer2ReconnectOPC_Elapsed(object sender, EventArgs e)
-        //{
-        //    //try to connect server every 40sec
-        //    //if server down reconnect automatic
-        //    //use thread window form not stuck
-        //    if (servercurrent_status == "Stop")
-        //    {
-        //        this.timerModbus.Stop();
-        //        var th3 = new Thread(Connect_OPC);
-        //        th3.IsBackground = false;
-        //        th3.Start();
-        //        System.Threading.Thread.Sleep(1000);
-        //        th3.Join();                
-        //    }
-        //    else if (servercurrent_status == "running")
-        //    {
-        //        OPCDA_Read();
-        //    }
-        //}
-
         private void timerModbus_Elapsed(object sender, EventArgs e)
         {
             //try to connect server every 40sec
@@ -682,19 +675,6 @@ namespace PI_OPC2Modbus
                 this.timerModbus.Start();
             }
 
-            //if (is_Portrunning == true)
-            //{
-            //    int port = Convert.ToInt32(Pub_dtTSetting.Rows[0][4]); //<--- This is your value
-            //    IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
-            //    foreach (var ip in host.AddressList)
-            //    {
-            //        if (ip.AddressFamily == AddressFamily.InterNetwork)
-            //        {
-            //            Console.WriteLine(ip.ToString());
-            //            Tomodbus();
-            //        }
-            //    }//End Family IP
-            //}
         }
     }
 }

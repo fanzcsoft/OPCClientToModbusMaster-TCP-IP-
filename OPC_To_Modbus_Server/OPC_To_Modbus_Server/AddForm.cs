@@ -31,20 +31,6 @@ namespace OPC_To_Modbus_Server
             Console.WriteLine("Add Form");                          
         }
 
-        //public void Get_TagMapping()
-        //{
-            
-        //    conn.Open();
-        //    String q = "SELECT ID,RegNo,OPC_TAGNAME,MB_ADDRESS,TagType FROM TTAGMapping Order By RegNo";
-        //    OleDbCommand cmd = new OleDbCommand(q, conn);
-        //    OleDbDataAdapter c = new OleDbDataAdapter(cmd);           
-        //    Pub_dtTTAGMapping = new DataTable();
-        //    Pub_dtTTAGMapping.Clear();
-        //    c.SelectCommand = cmd;
-        //    c.Fill(Pub_dtTTAGMapping);
-        //    conn.Close();
-        //}
-
         public void SaveAdd_Click(object sender, EventArgs e)
         {
             DialogResult result = MessageBox.Show("Confirmation Save ?", "Confirm", MessageBoxButtons.YesNo);

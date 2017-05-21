@@ -14,7 +14,7 @@ using System.IO;
 using System.Net.Sockets; //check port open close
 using System.Net; //start stop port
 using System.Globalization;
-using System.Windows;
+//using System.Windows;
 using System.Windows.Threading;
 using System.Runtime;
 using System.Runtime.InteropServices;
@@ -38,17 +38,9 @@ namespace OPC_To_Modbus_Server
 
         DataTable Pub_dtTSetting = new DataTable();
         public DataTable Pub_dtTTAGMapping = new DataTable();
-
+        int SelectedRowIndexdataGridView;
         Opc.Da.Subscription group;
-
         bool ShowMessage_Servername_Null = false;
-
-        #region Variable for Edit_Click function--
-
-        String PreChange_OPCTAG = "";
-        public int Edit_RowIndex = 0; //use with edit and cancel
-
-        #endregion
 
         #region Variable for Log--
 
@@ -263,6 +255,7 @@ namespace OPC_To_Modbus_Server
 
                 dataGridView1.Rows[row].Cells["TagType"].Value = TagType;
                 dataGridView1.Rows[row].Cells["OPC_Tag"].Value = Tag_Name;
+                dataGridView1.Rows[row].Cells["TimeStamp"].Value = "";
                 if(TagType == "F")
                 {
                     dataGridView1.Rows[row].Cells["Value"].Value = "-999";
@@ -450,7 +443,7 @@ namespace OPC_To_Modbus_Server
 
         public void ReadCompleteCallback(object clientHandle, Opc.Da.ItemValueResult[] results)
         {            
-            int rowgridview = 0;
+
             for (int row = 0; row < results.Count(); row++)
             {
                 string Result_TagItem = results[row].ItemName.ToString();
@@ -458,81 +451,93 @@ namespace OPC_To_Modbus_Server
                 string Result_TimeStamp = results[row].Timestamp.ToLocalTime().ToString();
                 double doubleRoundValue = 0;
 
-                string timeinlog = Convert.ToDateTime(DateTime.Now.ToString()).ToString("yyyy-MM-dd HH:mm:ss= ");
                 
-                string OPC_tag_indatagridview = dataGridView1.Rows[rowgridview].Cells["OPC_Tag"].Value.ToString();
-                string TagType_indatagridview = dataGridView1.Rows[rowgridview].Cells["TagType"].Value.ToString();
-                if (OPC_tag_indatagridview == Result_TagItem)
+                for (int rowgridview = 0; rowgridview < dataGridView1.Rows.Count; rowgridview++)
                 {
-                    if (results[row].Value != null)
+                    string OPC_tag_indatagridview = dataGridView1.Rows[rowgridview].Cells["OPC_Tag"].Value.ToString();
+                    string TagType_indatagridview = dataGridView1.Rows[rowgridview].Cells["TagType"].Value.ToString();
+                    if (OPC_tag_indatagridview == Result_TagItem)
                     {
-                        //Correct Tag Good Quality                                                
-                        doubleRoundValue = Math.Round(Convert.ToDouble(results[row].Value), 3);
-                        dataGridView1.Rows[rowgridview].Cells["Value"].Value = doubleRoundValue.ToString();
-                        dataGridView1.Rows[rowgridview].Cells["TimeStamp"].Value = Result_TimeStamp;
-                        dataGridView1.Rows[rowgridview].Cells["OPC_Tag"].Value = Result_TagItem;
-                        dataGridView1.Rows[rowgridview].Cells["Quality"].Value = Result_Quality;
-//Write Log--------------------------------------------------------------------------------------------------------                        
-                        if (write_log == true)//1 mean can connect opc server then write 1 time
+                        if (results[row].Value != null)
                         {
-                            using (StreamWriter sw = File.AppendText(AppendFilepath))
+                            //Correct Tag Good Quality                                                
+                            doubleRoundValue = Math.Round(Convert.ToDouble(results[row].Value), 3);
+                            dataGridView1.Rows[rowgridview].Cells["Value"].Value = doubleRoundValue.ToString();
+                            dataGridView1.Rows[rowgridview].Cells["TimeStamp"].Value = Result_TimeStamp;
+                            dataGridView1.Rows[rowgridview].Cells["OPC_Tag"].Value = Result_TagItem;
+                            dataGridView1.Rows[rowgridview].Cells["Quality"].Value = Result_Quality;
+                                                        
+                        }//end if Correct Tag Good Quality
+                        else if (results[row].Value == null)
+                        {
+                            //Correct Tag But Bad Quality
+                            if (TagType_indatagridview == "F")
                             {
-                                sw.WriteLine(timeinlog + OPC_tag_indatagridview + " Added item " + rowgridview + " to group The operation completed successfully");
+                                dataGridView1.Rows[rowgridview].Cells["Value"].Value = "-999";
                             }
-                        }
-//-----------------------------------------------------------------------------------------------------------------                                                              
-                        ++rowgridview;
-                    }//end if Correct Tag Good Quality
-                    else if (results[row].Value == null)
-                    {
-                        //Correct Tag But Bad Quality
-                        if (TagType_indatagridview == "F")
-                        {
-                            dataGridView1.Rows[rowgridview].Cells["Value"].Value = "-999";
-                        }
-                        else
-                        {
-                            dataGridView1.Rows[rowgridview].Cells["Value"].Value = "0";
-                        }                        
-                        dataGridView1.Rows[rowgridview].Cells["TimeStamp"].Value = Result_TimeStamp;
-                        dataGridView1.Rows[rowgridview].Cells["OPC_Tag"].Value = Result_TagItem;
-                        dataGridView1.Rows[rowgridview].Cells["Quality"].Value = Result_Quality;
-                        
-                        //Write Log--------------------------------------------------------------------------------------------------------
-                        if (write_log == true)//1 mean can connect opc server then write 1 time
-                        {
-                            using (StreamWriter sw = File.AppendText(AppendFilepath))
+                            else
                             {
-                                sw.WriteLine(timeinlog + OPC_tag_indatagridview + " Added item " + rowgridview + " Callback received for item but quality BAD The operation completed successfully Incorrect function");
+                                dataGridView1.Rows[rowgridview].Cells["Value"].Value = "0";
                             }
-                        }
+                            dataGridView1.Rows[rowgridview].Cells["TimeStamp"].Value = Result_TimeStamp;
+                            dataGridView1.Rows[rowgridview].Cells["OPC_Tag"].Value = Result_TagItem;
+                            dataGridView1.Rows[rowgridview].Cells["Quality"].Value = Result_Quality;
 
-                        //-----------------------------------------------------------------------------------------------------------------
-                        ++rowgridview;
-                    }//end else if Correct Tag But Bad Quality
-                }//end if Correct Tag
-                //Invalid Tag
-                else if (OPC_tag_indatagridview != Result_TagItem)
-                {
-                    //Console.WriteLine("In ReadComplete Callback ");
-                    dataGridView1.Rows[rowgridview].Cells["TimeStamp"].Value = "";
-                    dataGridView1.Rows[rowgridview].Cells["Quality"].Value = "";
-                    dataGridView1.Rows[rowgridview].Cells["Value"].Value = "-999";
-                    //Write Log--------------------------------------------------------------------------------------------------------
-                    if (write_log == true)//1 mean can connect opc server then write 1 time 
-                    {
-                        using (StreamWriter sw = File.AppendText(AppendFilepath))
-                        {
-                            sw.WriteLine(timeinlog + OPC_tag_indatagridview + " Unable to add item " + rowgridview + " to group The item is no longer available in the server address space.");
-                        }
-                    }
-                    //-----------------------------------------------------------------------------------------------------------------
+                                                        
+                        }//end else if Correct Tag But Bad Quality
+                    }//end if Correct Tag
                     
-                    ++rowgridview;
-                    --row;
-                }//end else if InvalidTag
+                }
+                
                 //textBox4.Invoke(new EventHandler(delegate { textBox4.Text = (results[row].Value).ToString(); }));                
             }//end for loop 
+            if (write_log == true)//1 mean can connect opc server then write 1 time
+            {
+                for (int log = 0; log < dataGridView1.Rows.Count; log++)
+                {
+                    string timeinlog = Convert.ToDateTime(DateTime.Now.ToString()).ToString("yyyy-MM-dd HH:mm:ss= ");
+                    string OPC_tag_indatagridview = dataGridView1.Rows[log].Cells["OPC_Tag"].Value.ToString();
+                    //good quality
+                    if (dataGridView1.Rows[log].Cells["Value"].Value.ToString() != "-999" && dataGridView1.Rows[log].Cells["TimeStamp"].Value.ToString() != "")
+                    {
+                        //Write Log--------------------------------------------------------------------------------------------------------                        
+                        
+                            using (StreamWriter sw = File.AppendText(AppendFilepath))
+                            {
+                                sw.WriteLine(timeinlog + OPC_tag_indatagridview + " Added item " + log + " to group The operation completed successfully");
+                            }
+                        
+                        //-----------------------------------------------------------------------------------------------------------------                                                              
+
+                    }
+                    //bad quality
+                    else if (dataGridView1.Rows[log].Cells["TimeStamp"].Value.ToString() != "")
+                    {
+                        //Write Log--------------------------------------------------------------------------------------------------------
+                        
+                            using (StreamWriter sw = File.AppendText(AppendFilepath))
+                            {
+                                sw.WriteLine(timeinlog + OPC_tag_indatagridview + " Added item " + log + " Callback received for item but quality BAD The operation completed successfully Incorrect function");
+                            }
+                        
+
+                        //-----------------------------------------------------------------------------------------------------------------
+
+                    }
+                    else if (dataGridView1.Rows[log].Cells["TimeStamp"].Value.ToString() == "")
+                    {
+                        //Write Log--------------------------------------------------------------------------------------------------------
+
+                            using (StreamWriter sw = File.AppendText(AppendFilepath))
+                            {
+                                sw.WriteLine(timeinlog + OPC_tag_indatagridview + " Unable to add item " + log + " to group The item is no longer available in the server address space.");
+                            }
+                        
+                        //-----------------------------------------------------------------------------------------------------------------
+
+                    }//end else if InvalidTag
+                }
+            }               
             write_log = false; // ++ mean don't write agian
             
         }
@@ -553,19 +558,16 @@ namespace OPC_To_Modbus_Server
 
 
         public void Edit_Click(object sender, EventArgs e)
-        {
+        {       
             Save.Visible = true;
             Cancel.Visible = true;
+            textBoxOPCTAG.Visible = true;
+            label3.Visible = true;
             Add.Visible = false;
             Edit.Visible = false;
             Delete.Visible = false;
-            dataGridView1.CurrentCell.ReadOnly = false;
-
-            Edit_RowIndex = dataGridView1.CurrentCell.RowIndex;
-
-            Console.WriteLine("Edit Row" + Edit_RowIndex);
-            PreChange_OPCTAG = dataGridView1.Rows[Edit_RowIndex].Cells["OPC_Tag"].Value.ToString();
-
+            textBoxOPCTAG.Text = dataGridView1.Rows[SelectedRowIndexdataGridView].Cells["OPC_Tag"].Value.ToString();
+            dataGridView1.Enabled = false;
         }
 
         #endregion
@@ -574,49 +576,57 @@ namespace OPC_To_Modbus_Server
 
         private void Save_Click(object sender, EventArgs e)
         {
-            int rowIndex = dataGridView1.CurrentCell.RowIndex;
-
-            String Post_OPCTag = dataGridView1.Rows[rowIndex].Cells["OPC_Tag"].Value.ToString();//USE IN UPDATE SET
-
-            int MB_ADDRESS_At_Rowselected = Convert.ToInt32(dataGridView1.Rows[rowIndex].Cells["Modbus_Adr"].Value);//USE IN WHERE TO UPDATE
-            String tagtype = dataGridView1.Rows[rowIndex].Cells["TagType"].Value.ToString();
-            if (tagtype == "F")
+            dataGridView1.Enabled = true;
+            //int rowIndex = dataGridView1.CurrentCell.RowIndex;
+            string UPDATE_OPCTAG = textBoxOPCTAG.Text.ToString();//USE IN UPDATE SET
+            string opctagselected = dataGridView1.Rows[SelectedRowIndexdataGridView].Cells["OPC_Tag"].Value.ToString();
+            string q = "UPDATE TTAGMapping SET OPC_TAGNAME = '" + UPDATE_OPCTAG + "' WHERE OPC_TAGNAME = '" + opctagselected + "'  ";
+            int checkduplicateTag = 0;
+            for (int row = 0; row < Pub_dtTTAGMapping.Rows.Count; row++)
             {
-                MB_ADDRESS_At_Rowselected = MB_ADDRESS_At_Rowselected - 400000;
-            }
-            else if (tagtype == "B")
+                if(UPDATE_OPCTAG == opctagselected)
+                {
+                    MessageBox.Show("Error Tag_Name Duplicate", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    checkduplicateTag = 1;
+                    break;
+                }
+            }                
+
+            if(checkduplicateTag == 0)
             {
-                MB_ADDRESS_At_Rowselected = MB_ADDRESS_At_Rowselected - 100000;
-            }
+                dataGridView1.Rows[SelectedRowIndexdataGridView].Cells["OPC_Tag"].Value = UPDATE_OPCTAG;
+                con.Open();
+                OleDbCommand cmd = new OleDbCommand(q, con);
+                cmd.ExecuteNonQuery();
+                con.Close();
 
-            Console.WriteLine(MB_ADDRESS_At_Rowselected);
-            String q = "UPDATE TTAGMapping SET OPC_TAGNAME = '" + Post_OPCTag + "' WHERE MB_ADDRESS = " + MB_ADDRESS_At_Rowselected + "  ";
-            //Console.WriteLine(q);
-            con.Open();
-            OleDbCommand cmd = new OleDbCommand(q, con);
-            cmd.ExecuteNonQuery();
-            con.Close();
-
-            //Get_TagMapping();
-            var th = new Thread(Get_TagMapping);
-            th.IsBackground = true;
-            th.Start();
-            Thread.Sleep(1000);
-            //Console.WriteLine("Main thread ({0}) exiting...",
-            //                  Thread.CurrentThread.ManagedThreadId);
-            //Connect_OPC();
-            var th2 = new Thread(Connect_OPC);
-            th2.IsBackground = true;
-            th2.Start();
-            Thread.Sleep(1000);
-            //Console.WriteLine("Main thread ({0}) exiting...",
-            //                  Thread.CurrentThread.ManagedThreadId);
-            dataGridView1.Update();
-            Save.Visible = false;
-            Cancel.Visible = false;
-            Add.Visible = true;
-            Edit.Visible = true;
-            Delete.Visible = true;
+                //Get_TagMapping();
+                var th = new Thread(Get_TagMapping);
+                th.IsBackground = true;
+                th.Start();
+                Thread.Sleep(1000);
+                //Console.WriteLine("Main thread ({0}) exiting...",
+                //                  Thread.CurrentThread.ManagedThreadId);
+                //Connect_OPC();
+                var th2 = new Thread(Connect_OPC);
+                th2.IsBackground = true;
+                th2.Start();
+                Thread.Sleep(1000);
+                //Console.WriteLine("Main thread ({0}) exiting...",
+                //                  Thread.CurrentThread.ManagedThreadId);
+                th.Join();
+                th2.Join();
+                label3.Visible = false;
+                textBoxOPCTAG.Visible = false;
+                textBoxOPCTAG.Clear();
+                dataGridView1.Update();
+                Save.Visible = false;
+                Cancel.Visible = false;
+                Add.Visible = true;
+                Edit.Visible = true;
+                Delete.Visible = true;
+            }          
+            
         }
 
         #endregion
@@ -625,14 +635,16 @@ namespace OPC_To_Modbus_Server
 
         public void Cancel_Click(object sender, EventArgs e)
         {
+            dataGridView1.Enabled = true;
+            label3.Visible = false;
+            textBoxOPCTAG.Visible = false;
+            textBoxOPCTAG.Clear();
             Save.Visible = false;
             Cancel.Visible = false;
             Add.Visible = true;
             Edit.Visible = true;
             Delete.Visible = true;
-            Console.WriteLine("Cancel Row"+Edit_RowIndex);
-            dataGridView1.Rows[Edit_RowIndex].Cells["OPC_Tag"].Value = PreChange_OPCTAG;
-            dataGridView1.CurrentRow.ReadOnly = true;
+
         }
 
         #endregion
@@ -1299,5 +1311,99 @@ namespace OPC_To_Modbus_Server
             }
         }
 
+        #region mouseclick on datagridview
+
+        private void dataGridView1_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                SelectedRowIndexdataGridView = dataGridView1.HitTest(e.X, e.Y).RowIndex;
+            }
+            else
+            {
+
+                ContextMenuStrip my_menu = new ContextMenuStrip();
+                SelectedRowIndexdataGridView = dataGridView1.HitTest(e.X, e.Y).RowIndex;
+                dataGridView1.ClearSelection();
+                dataGridView1.Rows[SelectedRowIndexdataGridView].Selected = true;
+
+
+                if (SelectedRowIndexdataGridView >= 0)
+                {
+                    my_menu.Items.Add("Edit").Name = "Edit";
+                    my_menu.Items.Add("Delete").Name = "Delete";
+                }
+                my_menu.Show(dataGridView1, new Point(e.X, e.Y));
+
+                //Event menu Click
+                my_menu.ItemClicked += new ToolStripItemClickedEventHandler(my_menu_ItemClicked);
+            }
+        }
+
+        private void my_menu_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            switch (e.ClickedItem.Name.ToString())
+            {
+                case "Delete":
+                    //Console.WriteLine("Delete case");
+                    try
+                    {
+                        String OPCSelected = dataGridView1.Rows[SelectedRowIndexdataGridView].Cells["OPC_Tag"].Value.ToString();
+                        dataGridView1.Rows.RemoveAt(SelectedRowIndexdataGridView);
+
+                        String q = "DELETE FROM TTAGMapping WHERE OPC_TAGNAME = '" + OPCSelected + "' ";
+                        Console.WriteLine(q);
+                        con.Open();
+                        OleDbCommand cmd = new OleDbCommand(q, con);
+                        cmd.ExecuteNonQuery();
+                        con.Close();
+
+
+                        //Get_TagMapping();
+                        var th = new Thread(Get_TagMapping);
+                        th.IsBackground = true;
+                        th.Start();
+                        Thread.Sleep(1000);
+                        //Console.WriteLine("Main thread ({0}) exiting...",
+                        //                  Thread.CurrentThread.ManagedThreadId);
+                        //AddValue2Datagridview();
+                        var th2 = new Thread(AddValue2Datagridview);
+                        th2.IsBackground = true;
+                        th2.Start();
+                        Thread.Sleep(100);
+
+                        dataGridView1.Update();
+                    
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error \n" + ex, "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    break;
+                case "Edit":
+                    //Do Something            
+
+                    try
+                    {
+                        Save.Visible = true;
+                        Cancel.Visible = true;
+                        textBoxOPCTAG.Visible = true;
+                        label3.Visible = true;
+                        Add.Visible = false;
+                        Edit.Visible = false;
+                        Delete.Visible = false;
+                        textBoxOPCTAG.Text = dataGridView1.Rows[SelectedRowIndexdataGridView].Cells["OPC_Tag"].Value.ToString();
+                        dataGridView1.Enabled = false;
+
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error \n" + ex, "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    break;
+            }
+        }
+
+#endregion
     }
 }
