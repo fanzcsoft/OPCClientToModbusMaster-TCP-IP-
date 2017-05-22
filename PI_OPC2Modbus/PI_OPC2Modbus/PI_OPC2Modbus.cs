@@ -34,7 +34,7 @@ namespace PI_OPC2Modbus
 
         Opc.Da.Subscription group;
 
-        bool ShowMessage_Servername_Null = false;
+
         bool is_Portrunning = false;
         bool externaldll_Exception = false;
 
@@ -57,7 +57,7 @@ namespace PI_OPC2Modbus
         static byte slaveId = 1;
         public ModbusSlave slave2Family = ModbusTcpSlave.CreateTcp(slaveId, server2Family);//must be outside funtion because this function can make memmory leak problem
         //ModbusIpMaster master2Family = ModbusIpMaster.CreateIp(tcpClient);
-
+        IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
         #endregion
 
         string servercurrent_status = "";
@@ -114,8 +114,7 @@ namespace PI_OPC2Modbus
             //Console.WriteLine("Get_TSetting");
             String qsetting = "";
             qsetting = "SELECT ID,Node,ServerProgID,MB_UnitID,MB_Port,UpdateRate,LoggerInterval,LoggerFile FROM TSetting";
-            //String conn_string = "Provider = Microsoft.ACE.OLEDB.12.0; Data Source = C:\\Users\\PorNB\\Documents\\Visual Studio 2015\\Projects1\\OPC_To_Modbus_Server\\OPC_To_Modbus_Server\\bin\\Debug\\TagMapping.mdb;Persist Security Info=False";
-            //OleDbConnection con = new OleDbConnection(conn_string);
+       
             con.Open();
 
             OleDbCommand cmd = new OleDbCommand(qsetting, con);
@@ -314,14 +313,6 @@ namespace PI_OPC2Modbus
                     this.timerModbus.Start();
                 }//end catch
             }//end if
-            else
-            {
-                if (ShowMessage_Servername_Null == false)
-                {   //Show 1 time
-                    ShowMessage_Servername_Null = true;
-                }
-
-            }
 
         }
 
@@ -461,91 +452,93 @@ namespace PI_OPC2Modbus
             this.timerModbus.Stop();
             try
             {
-                IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
+                //IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
                 foreach (var ip in host.AddressList)
                 {
                     if (ip.AddressFamily == AddressFamily.InterNetwork)
                     {
-                        TcpClient tcpClient = new TcpClient();
-                        tcpClient.Connect(ip.ToString(), port); //if port 502 open, server not start throw exception
-                        ModbusIpMaster master2Family = ModbusIpMaster.CreateIp(tcpClient);
-
-                        int Count_Boolean = 0;
-                        bool[] boolvalueto_inputRegister = new bool[dataGridView1.Rows.Count];
-                        slave2Family.DataStore.InputDiscretes.Clear(); // clear Input Status for manual add
-                        for (int row = 0; row < Pub_dtTTAGMapping.Rows.Count; row++)
+                        using(TcpClient tcpClient = new TcpClient())
                         {
-                            string Mb_Address = dataGridView1.Rows[row].Cells[2].Value.ToString();//MB address
-                            string Value = dataGridView1.Rows[row].Cells[3].Value.ToString();//Value
-                            string tagtype = dataGridView1.Rows[row].Cells[6].Value.ToString();//TagType
+                            tcpClient.Connect(ip.ToString(), port); //if port 502 open, server not start throw exception
+                            ModbusIpMaster master2Family = ModbusIpMaster.CreateIp(tcpClient);
 
-                            if (tagtype == "F")
+                            int Count_Boolean = 0;
+                            bool[] boolvalueto_inputRegister = new bool[dataGridView1.Rows.Count];
+                            slave2Family.DataStore.InputDiscretes.Clear(); // clear Input Status for manual add
+                            for (int row = 0; row < Pub_dtTTAGMapping.Rows.Count; row++)
                             {
-                                string ValueString = dataGridView1.Rows[row].Cells[3].Value.ToString();//Value
+                                string Mb_Address = dataGridView1.Rows[row].Cells[2].Value.ToString();//MB address
+                                string Value = dataGridView1.Rows[row].Cells[3].Value.ToString();//Value
+                                string tagtype = dataGridView1.Rows[row].Cells[6].Value.ToString();//TagType
 
-                                //Convert float to Hex---------------------------------------------------------------------------------
-                                float strTofloat;
-                                bool result = float.TryParse(ValueString, out strTofloat);
-
-                                if (result == true)
+                                if (tagtype == "F")
                                 {
-                                    byte[] buffer = BitConverter.GetBytes(strTofloat);
-                                    int intVal = BitConverter.ToInt32(buffer, 0);//if don't have this line then program do like string to hex
-                                                                                 //https://gregstoll.com/~gregstoll/floattohex/
-                                                                                 //http://string-functions.com/string-hex.aspx
-                                    string hexstring = intVal.ToString("X8");
+                                    string ValueString = dataGridView1.Rows[row].Cells[3].Value.ToString();//Value
 
-                                    //separate hex string-------------------------------------------------------------------------------------
-                                    string hexstrinng_left = hexstring.Substring(0, 4);
-                                    ushort hexshort_left = Convert.ToUInt16(hexstrinng_left, 16); //like under line
+                                    //Convert float to Hex---------------------------------------------------------------------------------
+                                    float strTofloat;
+                                    bool result = float.TryParse(ValueString, out strTofloat);
 
-                                    string hexstrinng_right = hexstring.Substring(4);
-                                    ushort hexshort_right = Convert.ToUInt16(hexstrinng_right, 16);
-                                    //Prepare MbAddress to send---------------------------------------------------------------------------------                            
+                                    if (result == true)
+                                    {
+                                        byte[] buffer = BitConverter.GetBytes(strTofloat);
+                                        int intVal = BitConverter.ToInt32(buffer, 0);//if don't have this line then program do like string to hex
+                                                                                     //https://gregstoll.com/~gregstoll/floattohex/
+                                                                                     //http://string-functions.com/string-hex.aspx
+                                        string hexstring = intVal.ToString("X8");
 
-                                    int int32Mb_Address = Convert.ToInt32(Mb_Address) - 400000 - 1;//-1 cause modscan32 start index 0
-                                    ushort RightShortMbAddress = Convert.ToUInt16(int32Mb_Address);
-                                    //ushort RightShortMbAddress = (ushort)int32Mb_Address;
+                                        //separate hex string-------------------------------------------------------------------------------------
+                                        string hexstrinng_left = hexstring.Substring(0, 4);
+                                        ushort hexshort_left = Convert.ToUInt16(hexstrinng_left, 16); //like under line
 
-                                    int LeftMbAddress = int32Mb_Address + 1;
-                                    ushort LeftShortMbAddress = Convert.ToUInt16(LeftMbAddress);
-                                    //ushort LeftShortMbAddress = (ushort)LeftMbAddress;
-                                    //---------------------------------------------------------------------------------------------------------------
-                                    master2Family.WriteSingleRegister(RightShortMbAddress, hexshort_right);
-                                    master2Family.WriteSingleRegister(LeftShortMbAddress, hexshort_left);
-                                }//end if result
+                                        string hexstrinng_right = hexstring.Substring(4);
+                                        ushort hexshort_right = Convert.ToUInt16(hexstrinng_right, 16);
+                                        //Prepare MbAddress to send---------------------------------------------------------------------------------                            
 
-                            }//end if Tagtype F
-                            else if (tagtype == "B")
-                            {
+                                        int int32Mb_Address = Convert.ToInt32(Mb_Address) - 400000 - 1;//-1 cause modscan32 start index 0
+                                        ushort RightShortMbAddress = Convert.ToUInt16(int32Mb_Address);
+                                        //ushort RightShortMbAddress = (ushort)int32Mb_Address;
 
-                                bool boolvalue = Convert.ToBoolean(Convert.ToInt16(Value));
-                                int int32Mb_Address = Convert.ToInt32(Mb_Address) - 100000 - 1;//-1 cause modscan32 start index 0
+                                        int LeftMbAddress = int32Mb_Address + 1;
+                                        ushort LeftShortMbAddress = Convert.ToUInt16(LeftMbAddress);
+                                        //ushort LeftShortMbAddress = (ushort)LeftMbAddress;
+                                        //---------------------------------------------------------------------------------------------------------------
+                                        master2Family.WriteSingleRegister(RightShortMbAddress, hexshort_right);
+                                        master2Family.WriteSingleRegister(LeftShortMbAddress, hexshort_left);
+                                    }//end if result
 
-                                master2Family.WriteSingleCoil(Convert.ToUInt16(int32Mb_Address), boolvalue);
-
-                                boolvalueto_inputRegister[Count_Boolean] = boolvalue;
-                                ++Count_Boolean;
-                                if (boolvalue == true)
+                                }//end if Tagtype F
+                                else if (tagtype == "B")
                                 {
-                                    //slave.DataStore.InputDiscretes.Add(true);
-                                    slave2Family.DataStore.InputDiscretes.Add(true);
-                                }
-                                else
-                                {
-                                    //slave.DataStore.InputDiscretes.Add(false);
-                                    slave2Family.DataStore.InputDiscretes.Add(false);
-                                }
 
-                            }//end else if Tagtype B
+                                    bool boolvalue = Convert.ToBoolean(Convert.ToInt16(Value));
+                                    int int32Mb_Address = Convert.ToInt32(Mb_Address) - 100000 - 1;//-1 cause modscan32 start index 0
 
-                        }//end for loop
-                        datastore.HoldingRegisters.Clear();
-                        datastore.InputRegisters.Clear();
-                        master2Family.Dispose();
-                        tcpClient.Close();
+                                    master2Family.WriteSingleCoil(Convert.ToUInt16(int32Mb_Address), boolvalue);
+
+                                    boolvalueto_inputRegister[Count_Boolean] = boolvalue;
+                                    ++Count_Boolean;
+                                    if (boolvalue == true)
+                                    {
+                                        //slave.DataStore.InputDiscretes.Add(true);
+                                        slave2Family.DataStore.InputDiscretes.Add(true);
+                                    }
+                                    else
+                                    {
+                                        //slave.DataStore.InputDiscretes.Add(false);
+                                        slave2Family.DataStore.InputDiscretes.Add(false);
+                                    }
+
+                                }//end else if Tagtype B
+
+                            }//end for loop
+                            datastore.HoldingRegisters.Clear();
+                            datastore.InputRegisters.Clear();
+                        }
+                                                                                             
                     }//end if ipv4
                 }//end foreach
+                
             }
             catch (ArgumentOutOfRangeException)
             {            
@@ -563,9 +556,6 @@ namespace PI_OPC2Modbus
             OnStart(null);
         }
 
-        public void OnDLLException()
-        {
-        }
         void InitializeAllStart()
         {
             this.timerModbus = new System.Timers.Timer();  // 30000 milliseconds = 30 seconds
@@ -607,8 +597,8 @@ namespace PI_OPC2Modbus
                 {
                     if (ip.AddressFamily == AddressFamily.InterNetwork)
                     {
-                        Console.WriteLine(ip.ToString());
-                        if(externaldll_Exception == false)
+                        //Console.WriteLine(ip.ToString());
+                        if(externaldll_Exception == false) //call only one time
                         {
                             server2Family.Start(); //Any IP 0.0.0.0:502
 
@@ -640,6 +630,7 @@ namespace PI_OPC2Modbus
         {
             InitializeAllStart();
             ServerStart();
+
         }
 
         protected override void OnStop()
@@ -667,7 +658,7 @@ namespace PI_OPC2Modbus
                 OPCDA_Read();
                 Thread.Sleep(8000);
                 int port = Convert.ToInt32(Pub_dtTSetting.Rows[0][4]); //<--- This is your value               
-                                                                       //Console.WriteLine(ip.ToString());
+                                                                      
                 Tomodbus();
                                                             
                 this.timerModbus.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 1000;

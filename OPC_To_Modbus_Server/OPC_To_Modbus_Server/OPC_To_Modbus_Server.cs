@@ -41,6 +41,7 @@ namespace OPC_To_Modbus_Server
         int SelectedRowIndexdataGridView;
         Opc.Da.Subscription group;
         bool ShowMessage_Servername_Null = false;
+        IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
 
         #region Variable for Log--
 
@@ -1055,103 +1056,106 @@ namespace OPC_To_Modbus_Server
             timerModbus.Stop();
             try
             {
-                IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
+                
                 foreach (var ip in host.AddressList)
                 {
                     if (ip.AddressFamily == AddressFamily.InterNetwork)
                     {
-                        TcpClient tcpClient = new TcpClient();
-                        tcpClient.Connect(ip.ToString(), port); //if port 502 open, server not start throw exception
-                        ModbusIpMaster master2Family = ModbusIpMaster.CreateIp(tcpClient);
+                        using (TcpClient tcpClient = new TcpClient())
+                        {
+                            tcpClient.Connect(ip.ToString(), port); //if port 502 open, server not start throw exception
+                            ModbusIpMaster master2Family = ModbusIpMaster.CreateIp(tcpClient);
 
-                        int Count_Boolean = 0;
-                        bool[] boolvalueto_inputRegister = new bool[dataGridView1.Rows.Count];
-                        slave2Family.DataStore.InputDiscretes.Clear(); // clear Input Status for manual add
-                        for (int row = 0; row < Pub_dtTTAGMapping.Rows.Count; row++)
-                        {                                                         
-                            string Mb_Address = dataGridView1.Rows[row].Cells[2].Value.ToString();//MB address
-                            string Value = dataGridView1.Rows[row].Cells[3].Value.ToString();//Value
-                            string tagtype = dataGridView1.Rows[row].Cells[6].Value.ToString();//TagType
-
-                            if (tagtype == "F")
+                            int Count_Boolean = 0;
+                            bool[] boolvalueto_inputRegister = new bool[dataGridView1.Rows.Count];
+                            slave2Family.DataStore.InputDiscretes.Clear(); // clear Input Status for manual add
+                            for (int row = 0; row < Pub_dtTTAGMapping.Rows.Count; row++)
                             {
-                                string ValueString = dataGridView1.Rows[row].Cells[3].Value.ToString();//Value
+                                string Mb_Address = dataGridView1.Rows[row].Cells[2].Value.ToString();//MB address
+                                string Value = dataGridView1.Rows[row].Cells[3].Value.ToString();//Value
+                                string tagtype = dataGridView1.Rows[row].Cells[6].Value.ToString();//TagType
 
-                                //Convert float to Hex---------------------------------------------------------------------------------
-                                float strTofloat;
-                                bool result = float.TryParse(ValueString, out strTofloat);
-                                //Console.WriteLine("parseinput : " + strTofloat);
-                                if (result == true)
+                                if (tagtype == "F")
                                 {
-                                    byte[] buffer = BitConverter.GetBytes(strTofloat);
-                                    int intVal = BitConverter.ToInt32(buffer, 0);//if don't have this line then program do like string to hex
-                                                                                 //https://gregstoll.com/~gregstoll/floattohex/
-                                                                                 //http://string-functions.com/string-hex.aspx
-                                    string hexstring = intVal.ToString("X8");
+                                    string ValueString = dataGridView1.Rows[row].Cells[3].Value.ToString();//Value
 
-                                    //Console.WriteLine("hex : " + hexstring);
-                                    //-----------------------------------------------------------------------------------------------------                    
-                                    //float sample = float.Parse("41.273", CultureInfo.InvariantCulture.NumberFormat);
-                                    //CultureInfo ci = new CultureInfo("en-us"); //use with underline
-                                    //string value_S = value_Int.ToString("D8", ci); //format input 1234 to output 00001234
+                                    //Convert float to Hex---------------------------------------------------------------------------------
+                                    float strTofloat;
+                                    bool result = float.TryParse(ValueString, out strTofloat);
+                                    //Console.WriteLine("parseinput : " + strTofloat);
+                                    if (result == true)
+                                    {
+                                        byte[] buffer = BitConverter.GetBytes(strTofloat);
+                                        int intVal = BitConverter.ToInt32(buffer, 0);//if don't have this line then program do like string to hex
+                                                                                     //https://gregstoll.com/~gregstoll/floattohex/
+                                                                                     //http://string-functions.com/string-hex.aspx
+                                        string hexstring = intVal.ToString("X8");
 
-        //separate hex string-------------------------------------------------------------------------------------
-                                    string hexstrinng_left = hexstring.Substring(0, 4);
-                                    ushort hexshort_left = Convert.ToUInt16(hexstrinng_left, 16); //like under line
-                                    //ushort hexshort_left = ushort.Parse(hexstrinng_left, System.Globalization.NumberStyles.AllowHexSpecifier);
-                                    //Console.WriteLine("left : " + hexshort_left);
+                                        //Console.WriteLine("hex : " + hexstring);
+                                        //-----------------------------------------------------------------------------------------------------                    
+                                        //float sample = float.Parse("41.273", CultureInfo.InvariantCulture.NumberFormat);
+                                        //CultureInfo ci = new CultureInfo("en-us"); //use with underline
+                                        //string value_S = value_Int.ToString("D8", ci); //format input 1234 to output 00001234
 
-                                    string hexstrinng_right = hexstring.Substring(4);
-                                    ushort hexshort_right = Convert.ToUInt16(hexstrinng_right, 16);
+                                        //separate hex string-------------------------------------------------------------------------------------
+                                        string hexstrinng_left = hexstring.Substring(0, 4);
+                                        ushort hexshort_left = Convert.ToUInt16(hexstrinng_left, 16); //like under line
+                                                                                                      //ushort hexshort_left = ushort.Parse(hexstrinng_left, System.Globalization.NumberStyles.AllowHexSpecifier);
+                                                                                                      //Console.WriteLine("left : " + hexshort_left);
 
-                                    //Console.WriteLine("R : " + hexshort_right);
-        //---------------------------------------------------------------------------------------------------------
+                                        string hexstrinng_right = hexstring.Substring(4);
+                                        ushort hexshort_right = Convert.ToUInt16(hexstrinng_right, 16);
 
-        //Prepare MbAddress to send---------------------------------------------------------------------------------                            
+                                        //Console.WriteLine("R : " + hexshort_right);
+                                        //---------------------------------------------------------------------------------------------------------
 
-                                    int int32Mb_Address = Convert.ToInt32(Mb_Address) - 400000 - 1;//-1 cause modscan32 start index 0
-                                    ushort RightShortMbAddress = Convert.ToUInt16(int32Mb_Address);
-                                    //ushort RightShortMbAddress = (ushort)int32Mb_Address;
+                                        //Prepare MbAddress to send---------------------------------------------------------------------------------                            
 
-                                    int LeftMbAddress = int32Mb_Address + 1;
-                                    ushort LeftShortMbAddress = Convert.ToUInt16(LeftMbAddress);
-                                    //ushort LeftShortMbAddress = (ushort)LeftMbAddress;
-                                    //---------------------------------------------------------------------------------------------------------------
-                                    master2Family.WriteSingleRegister(RightShortMbAddress, hexshort_right);
-                                    master2Family.WriteSingleRegister(LeftShortMbAddress, hexshort_left);
-                                }//end if result
+                                        int int32Mb_Address = Convert.ToInt32(Mb_Address) - 400000 - 1;//-1 cause modscan32 start index 0
+                                        ushort RightShortMbAddress = Convert.ToUInt16(int32Mb_Address);
+                                        //ushort RightShortMbAddress = (ushort)int32Mb_Address;
 
-                            }//end if Tagtype F
-                            else if (tagtype == "B")
-                            {
+                                        int LeftMbAddress = int32Mb_Address + 1;
+                                        ushort LeftShortMbAddress = Convert.ToUInt16(LeftMbAddress);
+                                        //ushort LeftShortMbAddress = (ushort)LeftMbAddress;
+                                        //---------------------------------------------------------------------------------------------------------------
+                                        master2Family.WriteSingleRegister(RightShortMbAddress, hexshort_right);
+                                        master2Family.WriteSingleRegister(LeftShortMbAddress, hexshort_left);
+                                    }//end if result
 
-                                bool boolvalue = Convert.ToBoolean(Convert.ToInt16(Value));
-                                int int32Mb_Address = Convert.ToInt32(Mb_Address) - 100000 - 1;//-1 cause modscan32 start index 0
-
-
-                                master2Family.WriteSingleCoil(Convert.ToUInt16(int32Mb_Address), boolvalue);
-
-                                boolvalueto_inputRegister[Count_Boolean] = boolvalue;
-                                ++Count_Boolean;
-                                //lock (slave.DataStore.CoilDiscretes){                       
-                                //slave.DataStore.InputDiscretes.Clear();
-                                //for (int Address_input_status = 0; Address_input_status < dataGridView1.Rows.Count; Address_input_status++)
-                                //{
-                                if (boolvalue == true)
+                                }//end if Tagtype F
+                                else if (tagtype == "B")
                                 {
-                                    //slave.DataStore.InputDiscretes.Add(true);
-                                    slave2Family.DataStore.InputDiscretes.Add(true);
-                                }
-                                else
-                                {
-                                    //slave.DataStore.InputDiscretes.Add(false);
-                                    slave2Family.DataStore.InputDiscretes.Add(false);
-                                }
-                                //}
-                                //}//end lock
-                            }//end else if Tagtype B
 
-                        }//end for loop  
+                                    bool boolvalue = Convert.ToBoolean(Convert.ToInt16(Value));
+                                    int int32Mb_Address = Convert.ToInt32(Mb_Address) - 100000 - 1;//-1 cause modscan32 start index 0
+
+
+                                    master2Family.WriteSingleCoil(Convert.ToUInt16(int32Mb_Address), boolvalue);
+
+                                    boolvalueto_inputRegister[Count_Boolean] = boolvalue;
+                                    ++Count_Boolean;
+                                    //lock (slave.DataStore.CoilDiscretes){                       
+                                    //slave.DataStore.InputDiscretes.Clear();
+                                    //for (int Address_input_status = 0; Address_input_status < dataGridView1.Rows.Count; Address_input_status++)
+                                    //{
+                                    if (boolvalue == true)
+                                    {
+                                        //slave.DataStore.InputDiscretes.Add(true);
+                                        slave2Family.DataStore.InputDiscretes.Add(true);
+                                    }
+                                    else
+                                    {
+                                        //slave.DataStore.InputDiscretes.Add(false);
+                                        slave2Family.DataStore.InputDiscretes.Add(false);
+                                    }
+                                    //}
+                                    //}//end lock
+                                }//end else if Tagtype B
+
+                            }//end for loop  
+                        }
+                                               
                     }
                 }//end foreach
             }
