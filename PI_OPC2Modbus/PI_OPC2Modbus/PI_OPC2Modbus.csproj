@@ -75,6 +75,26 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>bin\Debug\OpcNetApi.Com.dll</HintPath>
     </Reference>
+    <Reference Include="OpcRcw.Comn, Version=1.10.2.0, Culture=neutral, PublicKeyToken=9a40e993cbface53, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <HintPath>bin\OpcRcw.Comn.dll</HintPath>
+    </Reference>
+    <Reference Include="OpcRcw.Da, Version=3.0.3.0, Culture=neutral, PublicKeyToken=9a40e993cbface53, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <HintPath>bin\OpcRcw.Da.dll</HintPath>
+    </Reference>
+    <Reference Include="OpcRcw.Dx, Version=1.0.2.0, Culture=neutral, PublicKeyToken=9a40e993cbface53, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <HintPath>bin\OpcRcw.Dx.dll</HintPath>
+    </Reference>
+    <Reference Include="OpcRcw.Hda, Version=1.20.2.0, Culture=neutral, PublicKeyToken=9a40e993cbface53, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <HintPath>bin\OpcRcw.Hda.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration.Install" />
     <Reference Include="System.Core" />

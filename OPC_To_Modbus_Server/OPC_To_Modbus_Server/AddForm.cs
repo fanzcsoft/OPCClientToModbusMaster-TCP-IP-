@@ -17,18 +17,14 @@ namespace OPC_To_Modbus_Server
     
     public partial class AddForm : Form
     {
-        //DataTable Pub_dtTTAGMapping = new DataTable();
         private readonly OPC_To_ModBus_Server publicmainform;        
-        
-        //String conn_string = "Provider = Microsoft.ACE.OLEDB.12.0; Data Source = C:\\Users\\PorNB\\Documents\\Visual Studio 2015\\Projects1\\OPC_To_Modbus_Server\\OPC_To_Modbus_Server\\bin\\Debug\\TagMapping.mdb;Persist Security Info=False";
+                
         OleDbConnection conn = new OleDbConnection(@"Provider = Microsoft.ACE.OLEDB.12.0; Data Source = " + Directory.GetCurrentDirectory() + "\\TagMapping.mdb;Persist Security Info=False");
 
         public AddForm(OPC_To_ModBus_Server mainform)
         {
-            InitializeComponent();
-            //Get_TagMapping();
-            publicmainform = mainform;
-            Console.WriteLine("Add Form");                          
+            InitializeComponent();            
+            publicmainform = mainform;            
         }
 
         public void SaveAdd_Click(object sender, EventArgs e)
@@ -48,17 +44,17 @@ namespace OPC_To_Modbus_Server
 //Check Tag name-------And Modbus Address------------------------------------------------------------------------------------------
                 int checksametagname = 0;
                 int errorModbusAddress = 0;
-                //int modbusadd = Convert.ToInt32(textBoxModbusAdr.Text);
+                
                 int checkint_MBaddress_addform = 0;
                 string New_opctag = textBoxOPCTAG.Text;
                 
                 for (int row=0;row< publicmainform.Pub_dtTTAGMapping.Rows.Count; row++)
                 {
                     string opctag_Ondatagridview = publicmainform.dataGridView1.Rows[row].Cells["OPC_Tag"].Value.ToString();
-                    //check same TagName
+                    //check duplicate TagName
                     if (New_opctag == opctag_Ondatagridview)
                     {
-                        MessageBox.Show("Error Tag_Name same Added", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Error Tag_Name duplicate", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         checksametagname = 1;
                         break;
                     }
@@ -84,7 +80,7 @@ namespace OPC_To_Modbus_Server
                             {
                                 if (checkint_MBaddress_addform == (modbusgridview - 400000))
                                 {
-                                    MessageBox.Show("Error ModbusAddress same Added", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    MessageBox.Show("Error ModbusAddress duplicate", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                     errorModbusAddress = 1;
                                     break;
                                 }
@@ -93,7 +89,7 @@ namespace OPC_To_Modbus_Server
                             {
                                 if (checkint_MBaddress_addform == (modbusgridview- 100000))
                                 {
-                                    MessageBox.Show("Error ModbusAddress same Added", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    MessageBox.Show("Error ModbusAddress duplicate", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                     errorModbusAddress = 1;
                                     break;
                                 }
@@ -118,33 +114,31 @@ namespace OPC_To_Modbus_Server
                 {
                     regionTableAdapter.Insert(maxRegNo + 1, textBoxOPCTAG.Text, 0, "", Convert.ToInt32(textBoxModbusAdr.Text), 0, textBoxTagtype.Text);
                     publicmainform.dataGridView1.Rows.Add();
-
-                    //publicmainform.Get_TagMapping();
+                    
                     var th = new Thread(publicmainform.Get_TagMapping);
                     th.IsBackground = true;
-                    th.Start();
-                    Thread.Sleep(100);
-                    //Console.WriteLine("Main thread ({0}) exiting...",
-                    //                  Thread.CurrentThread.ManagedThreadId);
-                    
-                    //publicmainform.AddValue2Datagridview();
+                    th.Start();                    
+                    th.Join();
+                                        
                     var th2 = new Thread(publicmainform.AddValue2Datagridview);
                     th2.IsBackground = true;
                     th2.Start();
-                    Thread.Sleep(100);
-                    //Console.WriteLine("Main thread ({0}) exiting...",
-                    //                  Thread.CurrentThread.ManagedThreadId);
-
-                    publicmainform.dataGridView1.Update();
-                    
-                    //publicmainform.Connect_OPC();
+                    //Thread.Sleep(300);
+                    th2.Join();
+                                                          
                     var th3 = new Thread(publicmainform.Connect_OPC);
                     th3.IsBackground = true;
                     th3.Start();
-                    Thread.Sleep(100);
-                    //Console.WriteLine("Main thread ({0}) exiting...",
-                    //                  Thread.CurrentThread.ManagedThreadId);
-                                       
+                    //Thread.Sleep(300);
+                    th.Join();
+
+                    var th4 = new Thread(publicmainform.OPCDA_Read);
+                    th4.IsBackground = true;
+                    th4.Start();
+                    //Thread.Sleep(300);
+                    th4.Join();
+                    
+                    publicmainform.dataGridView1.Update();
                     this.Close();
                 }
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------                
@@ -156,8 +150,7 @@ namespace OPC_To_Modbus_Server
         }
 
         public void CancelAdd_Click(object sender, EventArgs e)
-        {
-            //AddForm formsetting = new AddForm();
+        {            
             this.Close();
         }
     }

@@ -80,7 +80,6 @@ namespace OPC_To_Modbus_Server
             Button.CheckForIllegalCrossThreadCalls = false;
             timer2ReconnectOPC.Enabled = false;            
             Get_TSetting();
-            //SetTcp();
             Checkport();
             InitialLogFile();
             Get_TagMapping();
@@ -194,8 +193,8 @@ namespace OPC_To_Modbus_Server
             textBoxServerName.Text = Pub_dtTSetting.Rows[0][2].ToString();
             textBoxModBus_Port.Text = Pub_dtTSetting.Rows[0][4].ToString();
             textBoxUnitID.Text = Pub_dtTSetting.Rows[0][3].ToString();
-            timer2ReconnectOPC.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 1000;
-            timerModbus.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 100;
+            timer2ReconnectOPC.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 1000; // 1min
+            timerModbus.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 100; // 6 seconds
             Invalidate(true);
             //con.Dispose();
         }
@@ -257,7 +256,8 @@ namespace OPC_To_Modbus_Server
                 dataGridView1.Rows[row].Cells["TagType"].Value = TagType;
                 dataGridView1.Rows[row].Cells["OPC_Tag"].Value = Tag_Name;
                 dataGridView1.Rows[row].Cells["TimeStamp"].Value = "";
-                if(TagType == "F")
+                dataGridView1.Rows[row].Cells["Quality"].Value = "";
+                if (TagType == "F")
                 {
                     dataGridView1.Rows[row].Cells["Value"].Value = "-999";
                 }
@@ -277,25 +277,21 @@ namespace OPC_To_Modbus_Server
 
         public void Connect_OPC()
         {
-            //Console.WriteLine("Connect_OPC");
-
             // 1st: Create a server object and connect to the RSLinx OPC Server
             servername = Pub_dtTSetting.Rows[0][2].ToString();
             if (servername != "")
             {
-                Opc.URL url = new Opc.URL("opcda://" + Pub_dtTSetting.Rows[0][1].ToString() + "/" + Pub_dtTSetting.Rows[0][2].ToString());
-                Opc.Da.Server serveropc = null;
-                OpcCom.Factory fact = new OpcCom.Factory();
-                //Kepware.KEPServerEX.V6
-                Opc.Da.ServerStatus serverStatus = new Opc.Da.ServerStatus();
-                //serveropc = new Opc.Da.Server(fact, null);
-                serveropc = new Opc.Da.Server(fact, url);
-                System.Net.NetworkCredential mCredentials = new System.Net.NetworkCredential();
-                Opc.ConnectData mConnectData = new Opc.ConnectData(mCredentials);
-
                 try
                 {
-                    //timer2ReconnectOPC.Stop();                    
+                    Opc.URL url = new Opc.URL("opcda://" + Pub_dtTSetting.Rows[0][1].ToString() + "/" + Pub_dtTSetting.Rows[0][2].ToString());
+                    Opc.Da.Server serveropc = null;
+                    OpcCom.Factory fact = new OpcCom.Factory();
+                    //Kepware.KEPServerEX.V6
+                    Opc.Da.ServerStatus serverStatus = new Opc.Da.ServerStatus();  
+                    serveropc = new Opc.Da.Server(fact, url);
+                    System.Net.NetworkCredential mCredentials = new System.Net.NetworkCredential();
+                    Opc.ConnectData mConnectData = new Opc.ConnectData(mCredentials);
+                                  
                     //2nd: Connect to the created server
                     serveropc.Connect(url, mConnectData);
 #if DEBUG_ERROR
@@ -348,10 +344,6 @@ namespace OPC_To_Modbus_Server
                         //Tag_Name
                         items[index_Tag].ItemName = Pub_dtTTAGMapping.Rows[index_Tag][2].ToString();//Pub_dtTTAGMapping.Rows[Row][Column]
                     }
-                    //timer2ReconnectOPC.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 1000;
-                    //timer2ReconnectOPC.Start();
-                    //timerModbus.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 300;
-                    //timerModbus.Start();
                     timer2ReconnectOPC.Enabled = true;
                     items = group.AddItems(items);
 
@@ -378,10 +370,9 @@ namespace OPC_To_Modbus_Server
                     }
                     MessageBox.Show("Error \n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
-                    //timer2ReconnectOPC.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 1000;
-                    //timer2ReconnectOPC.Start();
+
                     timer2ReconnectOPC.Enabled = true;
-                    //timer2ReconnectOPC.Enabled = true;
+
                 }//end catch
             }//end if
             else
@@ -392,9 +383,7 @@ namespace OPC_To_Modbus_Server
                     ShowMessage_Servername_Null = true;
                 }
                 
-            }
-                        
-            //Invalidate(true);
+            }                        
         }
 
         #endregion
@@ -443,8 +432,8 @@ namespace OPC_To_Modbus_Server
         #region ReadCallBack
 
         public void ReadCompleteCallback(object clientHandle, Opc.Da.ItemValueResult[] results)
-        {            
-
+        {
+                
             for (int row = 0; row < results.Count(); row++)
             {
                 string Result_TagItem = results[row].ItemName.ToString();
@@ -452,7 +441,6 @@ namespace OPC_To_Modbus_Server
                 string Result_TimeStamp = results[row].Timestamp.ToLocalTime().ToString();
                 double doubleRoundValue = 0;
 
-                
                 for (int rowgridview = 0; rowgridview < dataGridView1.Rows.Count; rowgridview++)
                 {
                     string OPC_tag_indatagridview = dataGridView1.Rows[rowgridview].Cells["OPC_Tag"].Value.ToString();
@@ -466,8 +454,7 @@ namespace OPC_To_Modbus_Server
                             dataGridView1.Rows[rowgridview].Cells["Value"].Value = doubleRoundValue.ToString();
                             dataGridView1.Rows[rowgridview].Cells["TimeStamp"].Value = Result_TimeStamp;
                             dataGridView1.Rows[rowgridview].Cells["OPC_Tag"].Value = Result_TagItem;
-                            dataGridView1.Rows[rowgridview].Cells["Quality"].Value = Result_Quality;
-                                                        
+                            dataGridView1.Rows[rowgridview].Cells["Quality"].Value = Result_Quality;                           
                         }//end if Correct Tag Good Quality
                         else if (results[row].Value == null)
                         {
@@ -484,14 +471,11 @@ namespace OPC_To_Modbus_Server
                             dataGridView1.Rows[rowgridview].Cells["OPC_Tag"].Value = Result_TagItem;
                             dataGridView1.Rows[rowgridview].Cells["Quality"].Value = Result_Quality;
 
-                                                        
                         }//end else if Correct Tag But Bad Quality
                     }//end if Correct Tag
-                    
                 }
-                
-                //textBox4.Invoke(new EventHandler(delegate { textBox4.Text = (results[row].Value).ToString(); }));                
-            }//end for loop 
+         
+            }//end write Gridview
             if (write_log == true)//1 mean can connect opc server then write 1 time
             {
                 for (int log = 0; log < dataGridView1.Rows.Count; log++)
@@ -539,7 +523,7 @@ namespace OPC_To_Modbus_Server
                     }//end else if InvalidTag
                 }
             }               
-            write_log = false; // ++ mean don't write agian
+            write_log = false; // 0 mean don't write agian
             
         }
         #endregion
@@ -549,8 +533,7 @@ namespace OPC_To_Modbus_Server
         private void Add_Click(object sender, EventArgs e)
         {
             AddForm form = new AddForm(this);
-            form.Show();
-            //Invalidate(true);            
+            form.Show();            
         }
 
         #endregion
@@ -605,18 +588,13 @@ namespace OPC_To_Modbus_Server
                 var th = new Thread(Get_TagMapping);
                 th.IsBackground = true;
                 th.Start();
-                Thread.Sleep(1000);
-                //Console.WriteLine("Main thread ({0}) exiting...",
-                //                  Thread.CurrentThread.ManagedThreadId);
-                //Connect_OPC();
+                th.Join();
+
                 var th2 = new Thread(Connect_OPC);
                 th2.IsBackground = true;
-                th2.Start();
-                Thread.Sleep(1000);
-                //Console.WriteLine("Main thread ({0}) exiting...",
-                //                  Thread.CurrentThread.ManagedThreadId);
-                th.Join();
+                th2.Start();                                                
                 th2.Join();
+                OPCDA_Read();
                 label3.Visible = false;
                 textBoxOPCTAG.Visible = false;
                 textBoxOPCTAG.Clear();
@@ -654,33 +632,46 @@ namespace OPC_To_Modbus_Server
 
         private void Delete_Click(object sender, EventArgs e)
         {
-            int rowIndex = dataGridView1.CurrentCell.RowIndex;
+            DialogResult result = MessageBox.Show("Confirmation Remove this?", "Confirm", MessageBoxButtons.YesNo);
+            if (result == DialogResult.Yes)
+            {
+                int rowIndex = dataGridView1.CurrentCell.RowIndex;
 
-            String ModbusAdrSelected = dataGridView1.Rows[rowIndex].Cells["OPC_Tag"].Value.ToString();
-            dataGridView1.Rows.RemoveAt(rowIndex);
+                String ModbusAdrSelected = dataGridView1.Rows[rowIndex].Cells["OPC_Tag"].Value.ToString();
+                dataGridView1.Rows.RemoveAt(rowIndex);
 
-            String q = "DELETE FROM TTAGMapping WHERE OPC_TAGNAME = '" + ModbusAdrSelected + "' ";
-            Console.WriteLine(q);
-            con.Open();
-            OleDbCommand cmd = new OleDbCommand(q, con);
-            cmd.ExecuteNonQuery();
-            con.Close();
+                String q = "DELETE FROM TTAGMapping WHERE OPC_TAGNAME = '" + ModbusAdrSelected + "' ";
+                Console.WriteLine(q);
+                con.Open();
+                OleDbCommand cmd = new OleDbCommand(q, con);
+                cmd.ExecuteNonQuery();
+                con.Close();
 
+                //Get_TagMapping();
+                var th = new Thread(Get_TagMapping);
+                th.IsBackground = true;
+                th.Start();
+                th.Join();
 
-            //Get_TagMapping();
-            var th = new Thread(Get_TagMapping);
-            th.IsBackground = true;
-            th.Start();
-            Thread.Sleep(1000);
-            //Console.WriteLine("Main thread ({0}) exiting...",
-            //                  Thread.CurrentThread.ManagedThreadId);
-            //AddValue2Datagridview();
-            var th2 = new Thread(AddValue2Datagridview);
-            th2.IsBackground = true;
-            th2.Start();
-            Thread.Sleep(100);
-            
-            dataGridView1.Update();
+                var th2 = new Thread(AddValue2Datagridview);
+                th2.IsBackground = true;
+                th2.Start();
+                th2.Join();
+
+                dataGridView1.Update();
+
+                var th3 = new Thread(Connect_OPC);
+                th3.IsBackground = true;
+                th3.Start();
+                th3.Join();
+
+                var th4 = new Thread(OPCDA_Read);
+                th4.IsBackground = true;
+                th4.Start();
+                th4.Join();
+                
+            }
+                
         }
 
         #endregion
@@ -1051,12 +1042,27 @@ namespace OPC_To_Modbus_Server
         DataStore datastore = DataStoreFactory.CreateDefaultDataStore();
         public void Tomodbus()
         {
-            int port = Convert.ToInt32(Pub_dtTSetting.Rows[0][4]); //<--- This is your value
-                                    
+            
             timerModbus.Stop();
             try
             {
-                
+                int port = Convert.ToInt32(Pub_dtTSetting.Rows[0][4]); //<--- This is your value
+                // define array to keep address Input Register---------------------------------------
+                int tagB = 0;
+                for (int row = 0; row < Pub_dtTTAGMapping.Rows.Count; row++)
+                {
+                    string tagtype = dataGridView1.Rows[row].Cells[6].Value.ToString();//TagType
+                    if (tagtype == "B")
+                    {
+                        tagB++;
+                    }
+                }
+                int[][] mosbusAdrInputRegister = new int[tagB][];
+                for (int index1 = 0; index1 < tagB; index1++)
+                {
+                    mosbusAdrInputRegister[index1] = new int[2];
+                }
+                //-----------------------------------------------------------------------------------
                 foreach (var ip in host.AddressList)
                 {
                     if (ip.AddressFamily == AddressFamily.InterNetwork)
@@ -1067,7 +1073,7 @@ namespace OPC_To_Modbus_Server
                             ModbusIpMaster master2Family = ModbusIpMaster.CreateIp(tcpClient);
 
                             int Count_Boolean = 0;
-                            bool[] boolvalueto_inputRegister = new bool[dataGridView1.Rows.Count];
+                            
                             slave2Family.DataStore.InputDiscretes.Clear(); // clear Input Status for manual add
                             for (int row = 0; row < Pub_dtTTAGMapping.Rows.Count; row++)
                             {
@@ -1077,12 +1083,9 @@ namespace OPC_To_Modbus_Server
 
                                 if (tagtype == "F")
                                 {
-                                    string ValueString = dataGridView1.Rows[row].Cells[3].Value.ToString();//Value
-
-                                    //Convert float to Hex---------------------------------------------------------------------------------
+                                    string ValueString = dataGridView1.Rows[row].Cells[3].Value.ToString();//Value                                    
                                     float strTofloat;
-                                    bool result = float.TryParse(ValueString, out strTofloat);
-                                    //Console.WriteLine("parseinput : " + strTofloat);
+                                    bool result = float.TryParse(ValueString, out strTofloat);                                    
                                     if (result == true)
                                     {
                                         byte[] buffer = BitConverter.GetBytes(strTofloat);
@@ -1130,16 +1133,37 @@ namespace OPC_To_Modbus_Server
                                     bool boolvalue = Convert.ToBoolean(Convert.ToInt16(Value));
                                     int int32Mb_Address = Convert.ToInt32(Mb_Address) - 100000 - 1;//-1 cause modscan32 start index 0
 
-
                                     master2Family.WriteSingleCoil(Convert.ToUInt16(int32Mb_Address), boolvalue);
 
-                                    boolvalueto_inputRegister[Count_Boolean] = boolvalue;
+                                    mosbusAdrInputRegister[Count_Boolean][0] = int32Mb_Address;
+                                    mosbusAdrInputRegister[Count_Boolean][1] = Convert.ToInt32(Value);
                                     ++Count_Boolean;
                                     //lock (slave.DataStore.CoilDiscretes){                       
                                     //slave.DataStore.InputDiscretes.Clear();
                                     //for (int Address_input_status = 0; Address_input_status < dataGridView1.Rows.Count; Address_input_status++)
                                     //{
-                                    if (boolvalue == true)
+                                    //if (boolvalue == true)
+                                    //{
+                                    //    //slave.DataStore.InputDiscretes.Add(true);
+                                    //    slave2Family.DataStore.InputDiscretes.Add(true);
+                                    //}
+                                    //else
+                                    //{
+                                    //    //slave.DataStore.InputDiscretes.Add(false);
+                                    //    slave2Family.DataStore.InputDiscretes.Add(false);
+                                    //}
+                                    //}
+                                    //}//end lock
+                                }//end else if Tagtype B
+
+                            }//end for loop                             
+                            int getlastaddress = mosbusAdrInputRegister[mosbusAdrInputRegister.Length - 1][0];
+                            int matchIndexInputregister = 0;
+                            for(int indexInputRegister = 0; indexInputRegister <= getlastaddress; indexInputRegister++)
+                            {
+                                if(indexInputRegister== mosbusAdrInputRegister[matchIndexInputregister][0])
+                                {
+                                    if (mosbusAdrInputRegister[matchIndexInputregister][1] == 1)
                                     {
                                         //slave.DataStore.InputDiscretes.Add(true);
                                         slave2Family.DataStore.InputDiscretes.Add(true);
@@ -1149,11 +1173,13 @@ namespace OPC_To_Modbus_Server
                                         //slave.DataStore.InputDiscretes.Add(false);
                                         slave2Family.DataStore.InputDiscretes.Add(false);
                                     }
-                                    //}
-                                    //}//end lock
-                                }//end else if Tagtype B
-
-                            }//end for loop  
+                                    matchIndexInputregister++;
+                                }
+                                else
+                                {
+                                    slave2Family.DataStore.InputDiscretes.Add(false);
+                                }
+                            }
                         }
                                                
                     }
@@ -1173,7 +1199,6 @@ namespace OPC_To_Modbus_Server
             }
 
         }
-
         #endregion
 
         #region StartPort_Click
@@ -1189,13 +1214,13 @@ namespace OPC_To_Modbus_Server
             try
             {
                 //Family IP
+                timerModbus.Stop();
                 IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
                 foreach (var ip in host.AddressList)
                 {
                     if (ip.AddressFamily == AddressFamily.InterNetwork)
                     {
-                        Console.WriteLine(ip.ToString());
-                        //server2Family = new TcpListener(IPAddress.Parse(ip.ToString()), port); //for start stop port
+                        //Run only first Index because it can open port only 1 time
                         server2Family.Start();
                  
                         slave2Family = ModbusTcpSlave.CreateTcp(slaveId, server2Family);//must be outside loop funtion because this function can make memmory leak problem
@@ -1203,20 +1228,18 @@ namespace OPC_To_Modbus_Server
 
                         tcpClient.Connect(ip.ToString(), port); //if port 502 open, server not start throw exception
                         Tomodbus();
-
                         break;
                     }
                     
                 }//End Family IP
-
+                timerModbus.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 100;
+                timerModbus.Start();
                 //tcpClient.Connect("127.0.0.1", port); //if port 502 open, server not start throw exception
                 //Console.WriteLine("Port open");               
                 PortStatus.Text = "Running";
                 is_Portrunning = true ;
                 StartPort.Visible = false;
                 StopPort.Visible = true;
-                //slaveHost.Listen(); //IP 127.0.0.1
-                //Tomodbus();
 
                 Invalidate(true);
             }
@@ -1267,25 +1290,24 @@ namespace OPC_To_Modbus_Server
 
         private void timer2ReconnectOPC_Tick(object sender, EventArgs e)
         {
-            //try to connect server every 40sec
+            //try to connect server every 60sec
             //if server down reconnect automatic
             //use thread window form not stuck
             if(servercurrent_status == "Stop")
-            {
-                timerModbus.Stop();
+            {                
+                //timerModbus.Stop();                
                 var th3 = new Thread(Connect_OPC);
                 th3.IsBackground = false;
                 if (th3.ThreadState != ThreadState.Running)
                 {
                     th3.Start();
-                }         
+                }
                 Thread.Sleep(1000);
-                th3.Join();         
+                th3.Join();
             }                                                                                       
-            else if (servercurrent_status == "running")
+            if (servercurrent_status == "running")
             {
                 OPCDA_Read();
-
             }
         }//end timer2Reconnect
 
@@ -1300,16 +1322,17 @@ namespace OPC_To_Modbus_Server
         {
             if (is_Portrunning == true)
             {
-                int port = Convert.ToInt32(Pub_dtTSetting.Rows[0][4]); //<--- This is your value
-                IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
-                foreach (var ip in host.AddressList)
-                {
-                    if (ip.AddressFamily == AddressFamily.InterNetwork)
-                    {
-                        Console.WriteLine(ip.ToString());
-                        Tomodbus();
-                    }
-                }//End Family IP
+                Tomodbus();
+                //int port = Convert.ToInt32(Pub_dtTSetting.Rows[0][4]); //<--- This is your value
+                //IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
+                //foreach (var ip in host.AddressList)
+                //{
+                //    if (ip.AddressFamily == AddressFamily.InterNetwork)
+                //    {
+                //        Tomodbus();
+                //    }
+                //}
+                //End Family IP
                 //tcpClient.Connect("127.0.0.1", port); //if port 502 open, server not start throw exception
                 //Tomodbus();
             }
@@ -1352,32 +1375,41 @@ namespace OPC_To_Modbus_Server
                     //Console.WriteLine("Delete case");
                     try
                     {
-                        String OPCSelected = dataGridView1.Rows[SelectedRowIndexdataGridView].Cells["OPC_Tag"].Value.ToString();
-                        dataGridView1.Rows.RemoveAt(SelectedRowIndexdataGridView);
+                        DialogResult result = MessageBox.Show("Confirmation remove ?", "Confirm", MessageBoxButtons.YesNo);
+                        if (result == DialogResult.Yes)
+                        {
+                            String OPCSelected = dataGridView1.Rows[SelectedRowIndexdataGridView].Cells["OPC_Tag"].Value.ToString();
+                            dataGridView1.Rows.RemoveAt(SelectedRowIndexdataGridView);
 
-                        String q = "DELETE FROM TTAGMapping WHERE OPC_TAGNAME = '" + OPCSelected + "' ";
-                        Console.WriteLine(q);
-                        con.Open();
-                        OleDbCommand cmd = new OleDbCommand(q, con);
-                        cmd.ExecuteNonQuery();
-                        con.Close();
+                            String q = "DELETE FROM TTAGMapping WHERE OPC_TAGNAME = '" + OPCSelected + "' ";
+                            Console.WriteLine(q);
+                            con.Open();
+                            OleDbCommand cmd = new OleDbCommand(q, con);
+                            cmd.ExecuteNonQuery();
+                            con.Close();
 
 
-                        //Get_TagMapping();
-                        var th = new Thread(Get_TagMapping);
-                        th.IsBackground = true;
-                        th.Start();
-                        Thread.Sleep(1000);
-                        //Console.WriteLine("Main thread ({0}) exiting...",
-                        //                  Thread.CurrentThread.ManagedThreadId);
-                        //AddValue2Datagridview();
-                        var th2 = new Thread(AddValue2Datagridview);
-                        th2.IsBackground = true;
-                        th2.Start();
-                        Thread.Sleep(100);
+                            //Get_TagMapping();
+                            var th = new Thread(Get_TagMapping);
+                            th.IsBackground = true;
+                            th.Start();
+                            th.Join();
 
-                        dataGridView1.Update();
-                    
+                            var th2 = new Thread(AddValue2Datagridview);
+                            th2.IsBackground = true;
+                            th2.Start();
+                            th2.Join();
+
+                            dataGridView1.Update();
+
+                            var th3 = new Thread(Connect_OPC);
+                            th3.IsBackground = true;
+                            th3.Start();
+                            th3.Join();
+
+                            OPCDA_Read();
+                        }
+                            
                     }
                     catch (Exception ex)
                     {

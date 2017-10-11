@@ -34,9 +34,7 @@ namespace PI_OPC2Modbus
 
         Opc.Da.Subscription group;
 
-
-        bool is_Portrunning = false;
-        bool externaldll_Exception = false;
+        bool is_Portrunning = false;        
 
         #region Variable for Log--
 
@@ -45,8 +43,10 @@ namespace PI_OPC2Modbus
         static string foldername = Convert.ToDateTime(dateTime).ToString("yyyy-MM-dd");
         static string filename = foldername;
         static string inlogFolderPath = AppDomain.CurrentDomain.BaseDirectory + "\\Log\\" + foldername;
-
+        static string LogFolder = AppDomain.CurrentDomain.BaseDirectory + "\\Log";
+        static string indebuglogFolderPath = AppDomain.CurrentDomain.BaseDirectory + "\\DebugLog\\" + foldername;
         String AppendFilepath = (Path.Combine(inlogFolderPath, filename)) + ".txt";
+
 
         #endregion
 
@@ -68,40 +68,72 @@ namespace PI_OPC2Modbus
 
         public PI_OPC2Modbus()
         {
-            InitializeComponent();           
+            if (!Directory.Exists(AppDomain.CurrentDomain.BaseDirectory + "\\DebugLog\\"))
+            {
+                if (!Directory.Exists(indebuglogFolderPath))
+                {
+                    Directory.CreateDirectory(indebuglogFolderPath);
+                }
+            }
+            
+            InitializeComponent();        
         }
 
         #region InitialLogFile
 
         public void InitialLogFile()
-        {
-            #region Create Directory--
-
-            if (!Directory.Exists(inlogFolderPath))
+        {            
+            try
             {
-                System.IO.Directory.CreateDirectory(inlogFolderPath);
+                #region Create Directory--
+                if (!Directory.Exists(LogFolder))
+                {
+                    System.IO.Directory.CreateDirectory(LogFolder);
+                }
+                
+                if (!Directory.Exists(inlogFolderPath))
+                {
+                    System.IO.Directory.CreateDirectory(inlogFolderPath);
+                }
+                if (!Directory.Exists(indebuglogFolderPath))
+                {
+                    System.IO.Directory.CreateDirectory(indebuglogFolderPath);
+                }
+                String q = "UPDATE TSetting SET LoggerFile = '" + inlogFolderPath + "' WHERE ID = 1";
+                //Console.WriteLine(q);
+                con.Open();
+                OleDbCommand cmd = new OleDbCommand(q, con);
+                cmd.ExecuteNonQuery();
+                con.Close();
+                //--------------------------------------------------------------------------------------------
+                #endregion
+
+                #region//Create Log File------
+                //Append in function ConnectOPC(),ReadCompleteCallback()
+                if (!File.Exists(inlogFolderPath + "\\" + filename + ".txt"))
+                {
+                    StreamWriter sw = File.CreateText(inlogFolderPath + "\\" + filename + ".txt");
+                    sw.Write("");
+                    sw.Close();
+                    //create file if file does not exist
+                }
+                if (!File.Exists(indebuglogFolderPath + "\\" + filename + ".txt"))
+                {
+                    StreamWriter sw = File.CreateText(indebuglogFolderPath + "\\" + filename + ".txt");
+                    sw.Write("");
+                    sw.Close();
+                    //create file if file does not exist
+                }
+                #endregion//-----
+
             }
-
-            #endregion
-
-            String q = "UPDATE TSetting SET LoggerFile = '" + inlogFolderPath + "' WHERE ID = 1";
-            //Console.WriteLine(q);
-            con.Open();
-            OleDbCommand cmd = new OleDbCommand(q, con);
-            cmd.ExecuteNonQuery();
-            con.Close();
-            //--------------------------------------------------------------------------------------------
-
-            #region//Create Log File------
-            //Append in function ConnectOPC(),ReadCompleteCallback()
-            if (!File.Exists(inlogFolderPath + "\\" + filename + ".txt"))
+            catch (Exception ex)
             {
-                StreamWriter sw = File.CreateText(inlogFolderPath + "\\" + filename + ".txt");
-                sw.Write("");
-                sw.Close();
-                //create file if file does not exist
-            }
-            #endregion//-----
+                using (StreamWriter sw = File.AppendText(indebuglogFolderPath + "\\" + filename + ".txt"))
+                {
+                    sw.WriteLine("ERROR : " + ex);
+                }
+            }                                          
 
         }
 
@@ -111,31 +143,37 @@ namespace PI_OPC2Modbus
 
         public void Get_TSetting()
         {
-            //Console.WriteLine("Get_TSetting");
-            String qsetting = "";
-            qsetting = "SELECT ID,Node,ServerProgID,MB_UnitID,MB_Port,UpdateRate,LoggerInterval,LoggerFile FROM TSetting";
-       
-            con.Open();
+            try
+            {
+                //Console.WriteLine("Get_TSetting");
+                String qsetting = "";
+                qsetting = "SELECT ID,Node,ServerProgID,MB_UnitID,MB_Port,UpdateRate,LoggerInterval,LoggerFile FROM TSetting";
 
-            OleDbCommand cmd = new OleDbCommand(qsetting, con);
-            OleDbDataAdapter c = new OleDbDataAdapter(cmd);
+                con.Open();
 
-            Pub_dtTSetting = new DataTable();
-            Pub_dtTSetting.Clear();
-            c.SelectCommand = cmd;
-            c.Fill(Pub_dtTSetting);
+                OleDbCommand cmd = new OleDbCommand(qsetting, con);
+                OleDbDataAdapter c = new OleDbDataAdapter(cmd);
 
-            c.Dispose(); //review
-            cmd.Dispose();//review
+                Pub_dtTSetting = new DataTable();
+                Pub_dtTSetting.Clear();
+                c.SelectCommand = cmd;
+                c.Fill(Pub_dtTSetting);
 
-            con.Close();
-            //textBoxServerName.Text = Pub_dtTSetting.Rows[0][2].ToString();
-            //textBoxModBus_Port.Text = Pub_dtTSetting.Rows[0][4].ToString();
-            //textBoxUnitID.Text = Pub_dtTSetting.Rows[0][3].ToString();
-            //timer2ReconnectOPC.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 1000;
-            timerModbus.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 1000;
-            //Invalidate(true);
-            //con.Dispose();
+                c.Dispose(); //review
+                cmd.Dispose();//review
+
+                con.Close();
+
+                timerModbus.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 1000;
+            }
+            catch(Exception ex)
+            {
+                using (StreamWriter sw = File.AppendText(indebuglogFolderPath + "\\" + filename + ".txt"))
+                {
+                    sw.WriteLine("ERROR : " + ex);
+                }
+            }            
+
         }
         #endregion
 
@@ -143,23 +181,34 @@ namespace PI_OPC2Modbus
 
         public void Get_TagMapping()
         {
-            //Console.WriteLine("Get_TagMapping");
-            String q = "SELECT ID,RegNo,OPC_TAGNAME,MB_ADDRESS,TagType FROM TTAGMapping Order By TagType desc,MB_ADDRESS ";
+            try
+            {
+                //Console.WriteLine("Get_TagMapping");
+                String q = "SELECT ID,RegNo,OPC_TAGNAME,MB_ADDRESS,TagType FROM TTAGMapping Order By TagType desc,MB_ADDRESS ";
 
-            con.Open();
+                con.Open();
 
-            OleDbCommand cmd = new OleDbCommand(q, con);
-            OleDbDataAdapter c = new OleDbDataAdapter(cmd);
+                OleDbCommand cmd = new OleDbCommand(q, con);
+                OleDbDataAdapter c = new OleDbDataAdapter(cmd);
 
-            Pub_dtTTAGMapping = new DataTable();
-            Pub_dtTTAGMapping.Clear();
-            c.SelectCommand = cmd;
-            c.Fill(Pub_dtTTAGMapping);
+                Pub_dtTTAGMapping = new DataTable();
+                Pub_dtTTAGMapping.Clear();
+                c.SelectCommand = cmd;
+                c.Fill(Pub_dtTTAGMapping);
 
-            con.Close();
+                con.Close();
 
-            //Invalidate(true);
-            //-----------------------------------------------------------------------------------------
+                //Invalidate(true);
+                //-----------------------------------------------------------------------------------------
+            }
+            catch (Exception ex)
+            {
+                using (StreamWriter sw = File.AppendText(indebuglogFolderPath + "\\" + filename + ".txt"))
+                {
+                    sw.WriteLine("ERROR : " + ex);
+                }
+            }
+            
         }
 
         #endregion
@@ -168,45 +217,56 @@ namespace PI_OPC2Modbus
 
         public void AddValue2Datagridview()
         {
-            int row = 0;
-            foreach (DataRow dtRow in Pub_dtTTAGMapping.Rows)
+            try
             {
-                string RegNo = dtRow[1].ToString();
-                string Tag_Name = dtRow[2].ToString();
-                string OPC_TAGNAME = dtRow[2].ToString();
-                string STR_MB_ADDRESS;
-                int INTMB_ADDRESS;
-                string TagType = dtRow[4].ToString();
+                int row = 0;
+                foreach (DataRow dtRow in Pub_dtTTAGMapping.Rows)
+                {
+                    string RegNo = dtRow[1].ToString();
+                    string Tag_Name = dtRow[2].ToString();
+                    string OPC_TAGNAME = dtRow[2].ToString();
+                    string STR_MB_ADDRESS;
+                    int INTMB_ADDRESS;
+                    string TagType = dtRow[4].ToString();
 
-                dataGridView1.Rows[row].Cells["RegNo"].Value = row + 1;
-                
-                if (TagType == "B")
-                {
-                    INTMB_ADDRESS = 100000 + Convert.ToInt32(dtRow[3]);
-                    STR_MB_ADDRESS = INTMB_ADDRESS.ToString();
-                }
-                else
-                {
-                    INTMB_ADDRESS = 400000 + Convert.ToInt32(dtRow[3]);
-                    STR_MB_ADDRESS = INTMB_ADDRESS.ToString();
-                }
-                dataGridView1.Rows[row].Cells["Modbus_Adr"].Value = STR_MB_ADDRESS;
+                    dataGridView1.Rows[row].Cells["RegNo"].Value = row + 1;
 
-                dataGridView1.Rows[row].Cells["TagType"].Value = TagType;
-                dataGridView1.Rows[row].Cells["OPC_Tag"].Value = Tag_Name;
-                dataGridView1.Rows[row].Cells["TimeStamp"].Value = "";
-                if (TagType == "F")
-                {
-                    dataGridView1.Rows[row].Cells["Value"].Value = "-999";
-                }
-                else
-                {
-                    dataGridView1.Rows[row].Cells["Value"].Value = "0";
-                }
-                row = row + 1;
+                    if (TagType == "B")
+                    {
+                        INTMB_ADDRESS = 100000 + Convert.ToInt32(dtRow[3]);
+                        STR_MB_ADDRESS = INTMB_ADDRESS.ToString();
+                    }
+                    else
+                    {
+                        INTMB_ADDRESS = 400000 + Convert.ToInt32(dtRow[3]);
+                        STR_MB_ADDRESS = INTMB_ADDRESS.ToString();
+                    }
+                    dataGridView1.Rows[row].Cells["Modbus_Adr"].Value = STR_MB_ADDRESS;
 
+                    dataGridView1.Rows[row].Cells["TagType"].Value = TagType;
+                    dataGridView1.Rows[row].Cells["OPC_Tag"].Value = Tag_Name;
+                    dataGridView1.Rows[row].Cells["TimeStamp"].Value = "";
+                    dataGridView1.Rows[row].Cells["Quality"].Value = "";
+                    if (TagType == "F")
+                    {
+                        dataGridView1.Rows[row].Cells["Value"].Value = "-999";
+                    }
+                    else
+                    {
+                        dataGridView1.Rows[row].Cells["Value"].Value = "0";
+                    }
+                    row = row + 1;
+
+                }
             }
-
+            catch(Exception ex)
+            {
+                using (StreamWriter sw = File.AppendText(indebuglogFolderPath + "\\" + filename + ".txt"))
+                {
+                    sw.WriteLine("ERROR : " + ex);
+                }
+            }
+            
         }
 
         #endregion
@@ -216,104 +276,111 @@ namespace PI_OPC2Modbus
         public void Connect_OPC()
         {
             //Console.WriteLine("Connect_OPC");
-
-            // 1st: Create a server object and connect to the RSLinx OPC Server
-            servername = Pub_dtTSetting.Rows[0][2].ToString();
-            if (servername != "")
+            try
             {
-                Opc.URL url = new Opc.URL("opcda://" + Pub_dtTSetting.Rows[0][1].ToString() + "/" + Pub_dtTSetting.Rows[0][2].ToString());
-                Opc.Da.Server serveropc = null;
-                OpcCom.Factory fact = new OpcCom.Factory();
-                //Kepware.KEPServerEX.V6
-                Opc.Da.ServerStatus serverStatus = new Opc.Da.ServerStatus();
-                //serveropc = new Opc.Da.Server(fact, null);
-                serveropc = new Opc.Da.Server(fact, url);
-                System.Net.NetworkCredential mCredentials = new System.Net.NetworkCredential();
-                Opc.ConnectData mConnectData = new Opc.ConnectData(mCredentials);
+                servername = Pub_dtTSetting.Rows[0][2].ToString();
+                if (servername != "")
+                {
+                    Opc.URL url = new Opc.URL("opcda://" + Pub_dtTSetting.Rows[0][1].ToString() + "/" + Pub_dtTSetting.Rows[0][2].ToString());
+                    Opc.Da.Server serveropc = null;
+                    OpcCom.Factory fact = new OpcCom.Factory();
+                    //Kepware.KEPServerEX.V6
+                    Opc.Da.ServerStatus serverStatus = new Opc.Da.ServerStatus();
+                    //serveropc = new Opc.Da.Server(fact, null);
+                    serveropc = new Opc.Da.Server(fact, url);
+                    System.Net.NetworkCredential mCredentials = new System.Net.NetworkCredential();
+                    Opc.ConnectData mConnectData = new Opc.ConnectData(mCredentials);
 
-                try
-                {                  
-                    //2nd: Connect to the created server
-                    serveropc.Connect(url, mConnectData);
+                    try
+                    {
+                        //2nd: Connect to the created server
+                        serveropc.Connect(url, mConnectData);
 #if DEBUG_ERROR
 #warning   you must install RSLinx server OR Kepware.KEPServerEX.V6 for install important .dll then you can easy test with Kepware.KEPServerEX.V6
 #endif
-                    //serveropc.Connect(url, new Opc.ConnectData(new System.Net.NetworkCredential())); //ไม่เปิดเซิฟเวอ จะติดตรงนี้           
-                    serverStatus = serveropc.GetStatus();
-                    servercurrent_status = serverStatus.ServerState.ToString();
-                    ServerStatusInTime.Text = serverStatus.ServerState.ToString();
+                        //serveropc.Connect(url, new Opc.ConnectData(new System.Net.NetworkCredential())); //ไม่เปิดเซิฟเวอ จะติดตรงนี้           
+                        serverStatus = serveropc.GetStatus();
+                        servercurrent_status = serverStatus.ServerState.ToString();
+                        ServerStatusInTime.Text = serverStatus.ServerState.ToString();
 
-                    //Append Log file if server Status running-------------------------------------------------
-                    string CompareServerstatus = "running";
-                    if (serverStatus.ServerState.ToString() == CompareServerstatus)
-                    {
-                        if (PortStatus.Text.ToString() == "Stop")
+                        //Append Log file if server Status running-------------------------------------------------
+                        string CompareServerstatus = "running";
+                        if (serverStatus.ServerState.ToString() == CompareServerstatus)
                         {
-                            //StartPort.Visible = true;
-                        }
-                        string timeinlog = Convert.ToDateTime(DateTime.Now.ToString()).ToString("yyyy-MM-dd HH:mm:ss= ");
-                        if (write_log == false) //First Time Write Log
-                        {
-                            using (StreamWriter sw = File.AppendText(AppendFilepath))
+                            if (PortStatus.Text.ToString() == "Stop")
                             {
-                                sw.WriteLine(timeinlog + Pub_dtTSetting.Rows[0][2].ToString() + " DCOM security The operation completed successfully");
-                                sw.WriteLine(timeinlog + "Connected to OPC server");
-                                sw.WriteLine(timeinlog + "MyGroup Added group to server The operation completed successfully");
+                                //StartPort.Visible = true;
                             }
+                            string timeinlog = Convert.ToDateTime(DateTime.Now.ToString()).ToString("yyyy-MM-dd HH:mm:ss= ");
+                            if (write_log == false) //First Time Write Log
+                            {
+                                using (StreamWriter sw = File.AppendText(AppendFilepath))
+                                {
+                                    sw.WriteLine(timeinlog + Pub_dtTSetting.Rows[0][2].ToString() + " DCOM security The operation completed successfully");
+                                    sw.WriteLine(timeinlog + "Connected to OPC server");
+                                    sw.WriteLine(timeinlog + "MyGroup Added group to server The operation completed successfully");
+                                }
+                            }
+                            write_log = true; // 1 mean don't write agian use in ReadCompleteCallback                    
+
                         }
-                        write_log = true; // 1 mean don't write agian use in ReadCompleteCallback                    
 
-                    }
+                        //----------------------------------------------------------------
 
-                    //----------------------------------------------------------------
+                        //3rd Create a group if items   
+                        Opc.Da.SubscriptionState groupState = new Opc.Da.SubscriptionState();
+                        groupState.Name = "group";
+                        groupState.Active = true;
+                        group = (Opc.Da.Subscription)serveropc.CreateSubscription(groupState);
 
-                    //3rd Create a group if items   
-                    Opc.Da.SubscriptionState groupState = new Opc.Da.SubscriptionState();
-                    groupState.Name = "group";
-                    groupState.Active = true;
-                    group = (Opc.Da.Subscription)serveropc.CreateSubscription(groupState);
+                        // add items to the group
 
-                    // add items to the group
+                        Opc.Da.Item[] items = new Opc.Da.Item[Pub_dtTTAGMapping.Rows.Count];
 
-                    Opc.Da.Item[] items = new Opc.Da.Item[Pub_dtTTAGMapping.Rows.Count];
+                        //Add item by DataTable From Function Get_TagMapping 
+                        for (int index_Tag = 0; index_Tag < Pub_dtTTAGMapping.Rows.Count; index_Tag++)
+                        {
 
-                    //Add item by DataTable From Function Get_TagMapping 
-                    for (int index_Tag = 0; index_Tag < Pub_dtTTAGMapping.Rows.Count; index_Tag++)
+                            items[index_Tag] = new Opc.Da.Item();
+                            //Tag_Name
+                            items[index_Tag].ItemName = Pub_dtTTAGMapping.Rows[index_Tag][2].ToString();//Pub_dtTTAGMapping.Rows[Row][Column]
+                        }
+                        items = group.AddItems(items);
+                        this.timerModbus.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5]) * 100);
+                        this.timerModbus.AutoReset = false;
+                        this.timerModbus.Start();
+
+                    }//end try
+                    catch (Exception)
                     {
+                        servercurrent_status = "Stop";
+                        //Exception Server Not Run
+                        string timeinlog = Convert.ToDateTime(DateTime.Now.ToString()).ToString("yyyy-MM-dd HH:mm:ss= ");
+                        write_log = false; // 1 mean don't write agian use in ReadCompleteCallback
+                        ServerStatusInTime.Text = "Stop";
 
-                        items[index_Tag] = new Opc.Da.Item();
-                        //Tag_Name
-                        items[index_Tag].ItemName = Pub_dtTTAGMapping.Rows[index_Tag][2].ToString();//Pub_dtTTAGMapping.Rows[Row][Column]
-                    }
-                    //this.timer2ReconnectOPC.Start();
-                    this.timerModbus.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 1000;
-                    this.timerModbus.AutoReset = false;
-                    this.timerModbus.Start();
-                    items = group.AddItems(items);
-                    
-                }//end try
-                catch (Exception)
+                        using (StreamWriter sw = File.AppendText(AppendFilepath))
+                        {
+                            //Pub_dtTSetting.Rows[0][2].ToString() => ServerName
+                            sw.WriteLine(timeinlog + Pub_dtTSetting.Rows[0][2].ToString() + " DCOM security The operation completed successfully");
+                            sw.WriteLine(timeinlog + "Unable to connect to OPC server");
+                            sw.WriteLine(timeinlog + "MyGroup Unable to add group to server Unspecified error");
+                            sw.WriteLine(timeinlog + "Service will be Reconnect To OPC Server With in 1 minutes");
+                        }
+                        this.timerModbus.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 1000;
+                        this.timerModbus.AutoReset = false;
+                        this.timerModbus.Start();
+                    }//end catch
+                }//end if
+            }
+            catch(Exception ex)
+            {
+                using (StreamWriter sw = File.AppendText(indebuglogFolderPath + "\\" + filename + ".txt"))
                 {
-                    servercurrent_status = "Stop";
-                    //Exception Server Not Run
-                    string timeinlog = Convert.ToDateTime(DateTime.Now.ToString()).ToString("yyyy-MM-dd HH:mm:ss= ");
-                    write_log = false; // 1 mean don't write agian use in ReadCompleteCallback
-                    ServerStatusInTime.Text = "Stop";
-
-                    using (StreamWriter sw = File.AppendText(AppendFilepath))
-                    {
-                        //Pub_dtTSetting.Rows[0][2].ToString() => ServerName
-                        sw.WriteLine(timeinlog + Pub_dtTSetting.Rows[0][2].ToString() + " DCOM security The operation completed successfully");
-                        sw.WriteLine(timeinlog + "Unable to connect to OPC server");
-                        sw.WriteLine(timeinlog + "MyGroup Unable to add group to server Unspecified error");
-                        sw.WriteLine(timeinlog + "Service will be Reconnect To OPC Server With in 1 minutes");
-                    }
-                    this.timerModbus.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 1000;
-                    this.timerModbus.AutoReset = false;
-                    this.timerModbus.Start();
-                }//end catch
-            }//end if
-
+                    sw.WriteLine("ERROR : " + ex);
+                }
+            }
+            // 1st: Create a server object and connect to the RSLinx OPC Server            
         }
 
         #endregion
@@ -329,12 +396,16 @@ namespace PI_OPC2Modbus
 
                 group.Read(group.Items, 1, new Opc.Da.ReadCompleteEventHandler(ReadCompleteCallback), out req);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 ServerStatusInTime.Text = "Stop"; //solve cross thread exception
                 servercurrent_status = "Stop"; //solve cross thread exception
                 //StartPort.Visible = false; //solve cross thread exception
                 //InvokeUpdateControls(); //solve cross thread exception
+                using (StreamWriter sw = File.AppendText(indebuglogFolderPath + "\\" + filename + ".txt"))
+                {
+                    sw.WriteLine("ERROR : " + ex);
+                }
             }
         }
 
@@ -344,6 +415,12 @@ namespace PI_OPC2Modbus
 
         public void ReadCompleteCallback(object clientHandle, Opc.Da.ItemValueResult[] results)
         {
+            for (int rowgridview = 0; rowgridview < Pub_dtTTAGMapping.Rows.Count; rowgridview++)
+            {
+                dataGridView1.Rows[rowgridview].Cells["TimeStamp"].Value = "";
+                dataGridView1.Rows[rowgridview].Cells["Quality"].Value = "";
+            }                
+
             for (int row = 0; row < results.Count(); row++)
             {
                 string Result_TagItem = results[row].ItemName.ToString();
@@ -446,12 +523,27 @@ namespace PI_OPC2Modbus
         #region Tomodbus
         DataStore datastore = DataStoreFactory.CreateDefaultDataStore();
         public void Tomodbus()
-        {
-            int port = Convert.ToInt32(Pub_dtTSetting.Rows[0][4]); //<--- This is your value
-
+        {            
             this.timerModbus.Stop();
             try
             {
+                int port = Convert.ToInt32(Pub_dtTSetting.Rows[0][4]); //<--- This is your value
+                // define array to keep address Input Register---------------------------------------
+                int tagB = 0;
+                for (int row = 0; row < Pub_dtTTAGMapping.Rows.Count; row++)
+                {
+                    string tagtype = dataGridView1.Rows[row].Cells[6].Value.ToString();//TagType
+                    if (tagtype == "B")
+                    {
+                        tagB++;
+                    }
+                }
+                int[][] mosbusAdrInputRegister = new int[tagB][];
+                for (int index1 = 0; index1 < tagB; index1++)
+                {
+                    mosbusAdrInputRegister[index1] = new int[2];
+                }
+                //-----------------------------------------------------------------------------------
                 //IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
                 foreach (var ip in host.AddressList)
                 {
@@ -516,9 +608,30 @@ namespace PI_OPC2Modbus
 
                                     master2Family.WriteSingleCoil(Convert.ToUInt16(int32Mb_Address), boolvalue);
 
-                                    boolvalueto_inputRegister[Count_Boolean] = boolvalue;
+                                    mosbusAdrInputRegister[Count_Boolean][0] = int32Mb_Address;
+                                    mosbusAdrInputRegister[Count_Boolean][1] = Convert.ToInt32(Value);
                                     ++Count_Boolean;
-                                    if (boolvalue == true)
+                                    //if (boolvalue == true)
+                                    //{
+                                    //    //slave.DataStore.InputDiscretes.Add(true);
+                                    //    slave2Family.DataStore.InputDiscretes.Add(false);
+                                    //}
+                                    //else
+                                    //{
+                                    //    //slave.DataStore.InputDiscretes.Add(false);
+                                    //    slave2Family.DataStore.InputDiscretes.Add(true);
+                                    //}
+
+                                }//end else if Tagtype B
+
+                            }//end for loop   
+                            int getlastaddress = mosbusAdrInputRegister[mosbusAdrInputRegister.Length - 1][0];
+                            int matchIndexInputregister = 0;
+                            for (int indexInputRegister = 0; indexInputRegister <= getlastaddress; indexInputRegister++)
+                            {
+                                if (indexInputRegister == mosbusAdrInputRegister[matchIndexInputregister][0])
+                                {
+                                    if (mosbusAdrInputRegister[matchIndexInputregister][1] == 1)
                                     {
                                         //slave.DataStore.InputDiscretes.Add(true);
                                         slave2Family.DataStore.InputDiscretes.Add(true);
@@ -528,11 +641,13 @@ namespace PI_OPC2Modbus
                                         //slave.DataStore.InputDiscretes.Add(false);
                                         slave2Family.DataStore.InputDiscretes.Add(false);
                                     }
-
-                                }//end else if Tagtype B
-
-                            }//end for loop
-                            datastore.HoldingRegisters.Clear();
+                                    matchIndexInputregister++;
+                                }
+                                else
+                                {
+                                    slave2Family.DataStore.InputDiscretes.Add(false);
+                                }
+                            }
                             datastore.InputRegisters.Clear();
                         }
                                                                                              
@@ -540,13 +655,14 @@ namespace PI_OPC2Modbus
                 }//end foreach
                 
             }
-            catch (ArgumentOutOfRangeException)
-            {            
-            }
-            finally
+            catch (Exception ex)
             {
-                
+                using (StreamWriter sw = File.AppendText(indebuglogFolderPath + "\\" + filename + ".txt"))
+                {
+                    sw.WriteLine("ERROR : " + ex);
+                }
             }
+
         }
 
         #endregion
@@ -558,38 +674,47 @@ namespace PI_OPC2Modbus
 
         void InitializeAllStart()
         {
-            this.timerModbus = new System.Timers.Timer();  // 30000 milliseconds = 30 seconds
-            this.timerModbus.Elapsed += new System.Timers.ElapsedEventHandler(this.timerModbus_Elapsed);
-            this.timerModbus.AutoReset = false; // prevent race condition
-            Get_TSetting();
-            InitialLogFile();
-            Get_TagMapping();
-            //Add EmptyRow To DataGridView
-            dataGridView1.Rows.Clear();   
-            for (int roww = 0; roww < Pub_dtTTAGMapping.Rows.Count; roww++)
+            try
             {
-                dataGridView1.Rows.Add();
-            }
-            //------------------------------
-            AddValue2Datagridview();//Add 3Column(RegNo, Modbus_Adr, TagType) To  DataGridView           
-            Connect_OPC();
+                this.timerModbus = new System.Timers.Timer();  // 30000 milliseconds = 30 seconds
+                this.timerModbus.Elapsed += new System.Timers.ElapsedEventHandler(this.timerModbus_Elapsed);
+                this.timerModbus.AutoReset = false; // prevent race condition
+                Get_TSetting();
+                InitialLogFile();
+                Get_TagMapping();
+                //Add EmptyRow To DataGridView
+                dataGridView1.Rows.Clear();
+                for (int roww = 0; roww < Pub_dtTTAGMapping.Rows.Count; roww++)
+                {
+                    dataGridView1.Rows.Add();
+                }
+                //------------------------------
+                AddValue2Datagridview();//Add 3Column(RegNo, Modbus_Adr, TagType) To  DataGridView           
+                Connect_OPC();
 
-            servername = Pub_dtTSetting.Rows[0][2].ToString();
-            string check_server_status_firsttime = ServerStatusInTime.Text.ToString();
-            if (servername != "" && check_server_status_firsttime != "Stop")
+                servername = Pub_dtTSetting.Rows[0][2].ToString();
+                string check_server_status_firsttime = ServerStatusInTime.Text.ToString();
+                if (servername != "" && check_server_status_firsttime != "Stop")
+                {
+                    OPCDA_Read();
+                }
+            }
+            catch(Exception ex)
             {
-                OPCDA_Read();
+                using (StreamWriter sw = File.AppendText(indebuglogFolderPath + "\\" + filename + ".txt"))
+                {
+                    sw.WriteLine("ERROR : " + ex);
+                }
             }
-
+            
         }
 
         void ServerStart()
         {
-            int port = Convert.ToInt32(Pub_dtTSetting.Rows[0][4]); //<--- This is your value
-            byte slaveId = Convert.ToByte(Pub_dtTSetting.Rows[0][3]);//row1 column4
-
             try
             {
+                int port = Convert.ToInt32(Pub_dtTSetting.Rows[0][4]); //<--- This is your value
+                byte slaveId = Convert.ToByte(Pub_dtTSetting.Rows[0][3]);//row1 column4            
                 //Family IP
                 Thread.Sleep(8000); //wait 8sec for datagrid update data
                 IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
@@ -597,19 +722,11 @@ namespace PI_OPC2Modbus
                 {
                     if (ip.AddressFamily == AddressFamily.InterNetwork)
                     {
-                        //Console.WriteLine(ip.ToString());
-                        if(externaldll_Exception == false) //call only one time
-                        {
-                            server2Family.Start(); //Any IP 0.0.0.0:502
-
-                            slave2Family = ModbusTcpSlave.CreateTcp(slaveId, server2Family);//must be outside loop funtion because this function can make memmory leak problem
-                            slave2Family.Listen();
-
-                            externaldll_Exception = true;
-                        }
-                                
-
-                        //break;
+                        //break because  it can open port 1 time
+                        server2Family.Start(); //Any IP 0.0.0.0:502
+                        slave2Family = ModbusTcpSlave.CreateTcp(slaveId, server2Family);//must be outside loop funtion because this function can make memmory leak problem
+                        slave2Family.Listen();
+                        break;
                     }
                     
                 }//End Family IP
@@ -620,9 +737,12 @@ namespace PI_OPC2Modbus
                 PortStatus.Text = "Running";
                 is_Portrunning = true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                using (StreamWriter sw = File.AppendText(indebuglogFolderPath + "\\" + filename + ".txt"))
+                {
+                    sw.WriteLine("ERROR : " + ex);
+                }
             }
         }
 
@@ -637,21 +757,17 @@ namespace PI_OPC2Modbus
         {
             //File.Create(AppDomain.CurrentDomain.BaseDirectory + "Onstop.txt");
         }
-
+        int counttoReconnectOPC = 0;
         private void timerModbus_Elapsed(object sender, EventArgs e)
         {
-            //try to connect server every 40sec
+            //try to connect server every 60sec
             //if server down reconnect automatic
-            //use thread window form not stuck
+            //use thread window form not stuck            
+            InitialLogFile();                       
             if (servercurrent_status == "Stop")
             {
                 this.timerModbus.Stop();
                 Connect_OPC();
-                //var th3 = new Thread(Connect_OPC);
-                //th3.IsBackground = false;
-                //th3.Start();
-                //Thread.Sleep(1000);
-                //th3.Join();
             }
             if (servercurrent_status == "running" && is_Portrunning == true)
             {
@@ -660,12 +776,25 @@ namespace PI_OPC2Modbus
                 int port = Convert.ToInt32(Pub_dtTSetting.Rows[0][4]); //<--- This is your value               
                                                                       
                 Tomodbus();
-                                                            
-                this.timerModbus.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 1000;
+                counttoReconnectOPC++;                                                            
+                this.timerModbus.Interval = (Convert.ToInt32(Pub_dtTSetting.Rows[0][5])) * 800;
                 this.timerModbus.AutoReset = false; // prevent race condition
                 this.timerModbus.Start();
             }
-
+            //if (counttoReconnectOPC == 10)//5min
+            //{
+            //    counttoReconnectOPC = 0;
+            //    Get_TagMapping();
+            //    //Add EmptyRow To DataGridView
+            //    dataGridView1.Rows.Clear();
+            //    for (int roww = 0; roww < Pub_dtTTAGMapping.Rows.Count; roww++)
+            //    {
+            //        dataGridView1.Rows.Add();
+            //    }
+            //    //------------------------------
+            //    AddValue2Datagridview();//Add 3Column(RegNo, Modbus_Adr, TagType) To  DataGridView           
+            //    Connect_OPC();
+            //}
         }
     }
 }

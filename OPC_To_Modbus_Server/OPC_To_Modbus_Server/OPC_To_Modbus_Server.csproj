@@ -83,6 +83,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>bin\Debug\Opc.UaFx.Advanced.dll</HintPath>
     </Reference>
+    <Reference Include="OpcComRcw, Version=2.0.105.1, Culture=neutral, PublicKeyToken=9a40e993cbface53, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\PI_OPC2Modbus\PI_OPC2Modbus\bin\OpcComRcw.dll</HintPath>
+    </Reference>
     <Reference Include="OpcNetApi, Version=2.0.2.0, Culture=neutral, PublicKeyToken=5c79214b9c2044a5, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>bin\Debug\OpcNetApi.dll</HintPath>
@@ -90,6 +94,26 @@
     <Reference Include="OpcNetApi.Com, Version=1.30.3.0, Culture=neutral, PublicKeyToken=9a40e993cbface53">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>bin\Debug\OpcNetApi.Com.dll</HintPath>
+    </Reference>
+    <Reference Include="OpcRcw.Comn, Version=1.10.2.0, Culture=neutral, PublicKeyToken=9a40e993cbface53, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <HintPath>..\..\PI_OPC2Modbus\PI_OPC2Modbus\bin\OpcRcw.Comn.dll</HintPath>
+    </Reference>
+    <Reference Include="OpcRcw.Da, Version=3.0.3.0, Culture=neutral, PublicKeyToken=9a40e993cbface53, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <HintPath>..\..\PI_OPC2Modbus\PI_OPC2Modbus\bin\OpcRcw.Da.dll</HintPath>
+    </Reference>
+    <Reference Include="OpcRcw.Dx, Version=1.0.2.0, Culture=neutral, PublicKeyToken=9a40e993cbface53, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <HintPath>..\..\PI_OPC2Modbus\PI_OPC2Modbus\bin\OpcRcw.Dx.dll</HintPath>
+    </Reference>
+    <Reference Include="OpcRcw.Hda, Version=1.20.2.0, Culture=neutral, PublicKeyToken=9a40e993cbface53, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <HintPath>..\..\PI_OPC2Modbus\PI_OPC2Modbus\bin\OpcRcw.Hda.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
